@@ -1,0 +1,61 @@
+<div class="anatomy-wrap">
+  <svg class="anatomy" viewBox="0 0 320 520" role="img" aria-label="نقشه تعاملی آناتومی رومکا">
+    <defs>
+      <linearGradient id="rk" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#8b7cf6" stop-opacity=".22"/>
+        <stop offset="1" stop-color="#4fa8ff" stop-opacity=".05"/>
+      </linearGradient>
+    </defs>
+    <!-- aura -->
+    <ellipse cx="160" cy="250" rx="118" ry="215" fill="url(#rk)" opacity=".5"/>
+    <!-- nervous system / spine -->
+    <g class="region" data-region="nervous" tabindex="0" role="button" aria-label="سیستم عصبی: عادت و تمرکز">
+      <path class="line" d="M160 112 L160 330 M160 150 L120 195 M160 150 L200 195 M160 210 L118 260 M160 210 L202 260 M160 270 L128 320 M160 270 L192 320"/>
+      <circle class="hit" cx="160" cy="230" r="70"/>
+    </g>
+    <!-- brain -->
+    <g class="region" data-region="brain" tabindex="0" role="button" aria-label="مغز: هوش و تصمیم">
+      <path class="shape" d="M160 22 C132 22 116 43 118 66 C110 78 116 96 128 101 C132 114 148 120 160 118 C172 120 188 114 192 101 C204 96 210 78 202 66 C204 43 188 22 160 22 Z"/>
+      <path class="line" d="M160 30 L160 112 M138 45 C150 55 150 70 140 82 M182 45 C170 55 170 70 180 82"/>
+      <circle class="hit" cx="160" cy="70" r="55"/>
+    </g>
+    <!-- eyes -->
+    <g class="region" data-region="eyes" tabindex="0" role="button" aria-label="چشمها: داده و پیشرفت">
+      <ellipse class="node" cx="146" cy="70" rx="6" ry="4"/><ellipse class="node" cx="174" cy="70" rx="6" ry="4"/>
+      <circle class="hit" cx="160" cy="70" r="22"/>
+    </g>
+    <!-- torso / energy -->
+    <g class="region" data-region="energy" tabindex="0" role="button" aria-label="انرژی: تغذیه و ریکاوری">
+      <path class="shape" d="M122 128 C108 140 104 170 110 205 C114 235 120 268 130 292 L190 292 C200 268 206 235 210 205 C216 170 212 140 198 128 Z"/>
+      <ellipse class="line" cx="160" cy="248" rx="26" ry="20"/>
+      <circle class="hit" cx="160" cy="255" r="52"/>
+    </g>
+    <!-- heart -->
+    <g class="region" data-region="heart" tabindex="0" role="button" aria-label="قلب: احساس و روابط">
+      <path class="shape" d="M150 178 C142 166 126 172 128 186 C130 200 150 212 150 212 C150 212 170 200 172 186 C174 172 158 166 150 178 Z"/>
+      <circle class="hit" cx="150" cy="188" r="30"/>
+    </g>
+    <!-- muscles / limbs -->
+    <g class="region" data-region="muscles" tabindex="0" role="button" aria-label="عضلات: بدن و تمرین">
+      <path class="shape" d="M122 130 C100 138 88 170 82 205 L74 268 M198 130 C220 138 232 170 238 205 L246 268"/>
+      <path class="shape" d="M132 292 C126 340 124 392 126 462 L142 462 C144 400 150 350 158 310 M188 292 C194 340 196 392 194 462 L178 462 C176 400 170 350 162 310"/>
+      <circle class="hit" cx="108" cy="245" r="48"/><circle class="hit" cx="160" cy="380" r="70"/>
+    </g>
+    <!-- spine / goals -->
+    <g class="region" data-region="spine" tabindex="0" role="button" aria-label="ستون فقرات: اهداف و ثبات">
+      <path class="shape" d="M156 120 L164 120 L164 300 L156 300 Z"/>
+      <circle class="hit" cx="160" cy="210" r="20"/>
+    </g>
+    <!-- hands -->
+    <g class="region" data-region="hands" tabindex="0" role="button" aria-label="دستها: اجرا و پروژه">
+      <circle class="node" cx="72" cy="278" r="11"/><circle class="node" cx="248" cy="278" r="11"/>
+      <circle class="hit" cx="72" cy="278" r="26"/><circle class="hit" cx="248" cy="278" r="26"/>
+    </g>
+  </svg>
+  <div>
+    <div class="card-h"><h2>نقشه حوزهها</h2><span class="hint" id="anatomy-hint">انتخاب یک ناحیه</span></div>
+    <div class="region-list" id="region-list"></div>
+    <div class="region-detail" id="region-detail">روی یکی از نواحی بدن کلیک کنید تا متخصصان و دادههای واقعی آن حوزه نمایش داده شود.</div>
+    <div class="row" style="margin-top:12px"><a class="btn sm" href="/agents">همه متخصصها</a><a class="btn sm ghost" href="/chat">گفتوگو</a></div>
+  </div>
+</div>

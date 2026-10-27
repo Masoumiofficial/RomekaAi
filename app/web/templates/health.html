@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="health-alert"></div>
+<div class="grid g-main">
+  <div class="stack">
+    <div class="card">
+      <div class="card-h"><h2>برآورد انرژی و درشتمغذیها</h2><span class="hint">تخمین، نه نسخه پزشکی</span></div>
+      <div class="grid g-4" id="energy-kpis"></div>
+      <p class="small faint" id="energy-note" style="margin-top:12px"></p>
+    </div>
+    <div class="card"><div class="card-h"><h2>برنامه تمرینی پویا</h2><span class="hint" id="workout-meta"></span></div>
+      <div id="workout-plan" class="stack"></div></div>
+    <div class="card"><div class="card-h"><h2>برنامه غذایی روزانه</h2></div><div id="meal-plan" class="stack"></div></div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-h"><h2>ارزیابی بدنی</h2></div>
+      <div class="grid-form">
+        <div class="field"><label>سن</label><input id="f-age" type="number" value="30"></div>
+        <div class="field"><label>قد (سانتیمتر)</label><input id="f-height" type="number" value="178"></div>
+        <div class="field"><label>وزن (کیلوگرم)</label><input id="f-weight" type="number" value="78" step="0.1"></div>
+        <div class="field"><label>جنسیت</label><select id="f-sex"><option value="male">مرد</option><option value="female">زن</option><option value="unspecified">ترجیح میدهم نگویم</option></select></div>
+        <div class="field"><label>فعالیت</label><select id="f-activity"><option value="sedentary">کم</option><option value="light">سبک</option><option value="moderate" selected>متوسط</option><option value="high">زیاد</option></select></div>
+        <div class="field"><label>هدف</label><select id="f-goal"><option value="maintain">حفظ وزن</option><option value="cut">کاهش وزن</option><option value="bulk">افزایش وزن</option></select></div>
+        <div class="field"><label>سابقه</label><select id="f-exp"><option value="beginner">مبتدی</option><option value="intermediate">متوسط</option><option value="advanced">پیشرفته</option></select></div>
+        <div class="field"><label>روزهای تمرین</label><input id="f-days" type="number" value="3" min="1" max="6"></div>
+      </div>
+      <div class="field"><label>تجهیزات (کاما)</label><input id="f-equip" placeholder="gym, dumbbell"></div>
+      <div class="field"><label>آسیبها (کاما)</label><input id="f-injuries" placeholder="زانو"></div>
+      <div class="field"><label>آلرژیها (کاما)</label><input id="f-allergies" placeholder="لبنیات"></div>
+      <button class="btn primary sm" id="assess-btn" style="width:100%">ذخیره و ساخت برنامه</button>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>ثبت جلسه تمرینی</h2><span class="hint">سناریو C</span></div>
+      <div class="grid-form">
+        <div class="field"><label>حرکت</label><input id="l-ex" value="اسکوات"></div>
+        <div class="field"><label>وزنه (kg)</label><input id="l-weight" type="number" value="60" step="0.5"></div>
+        <div class="field"><label>ست</label><input id="l-sets" type="number" value="3"></div>
+        <div class="field"><label>تکرار</label><input id="l-reps" type="number" value="10"></div>
+        <div class="field"><label>RPE (۱–۱۰)</label><input id="l-rpe" type="number" value="7"></div>
+        <div class="field"><label>ستهای برنامه</label><input id="l-planned" type="number" value="3"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="l-pain" style="width:auto"> درد یا علامت غیرعادی داشتم</label>
+      <button class="btn sm" id="log-btn" style="width:100%;margin-top:10px">ثبت و دریافت پیشنهاد پیشرفت</button>
+      <div id="prog-result" class="small" style="margin-top:12px"></div>
+    </div>
+    <div class="card"><div class="card-h"><h2>تاریخچه ثبتها</h2></div><div id="log-list" class="list"></div></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content=""><title>ورود — ROMKA</title>
+  <link rel="stylesheet" href="/static/css/romka.css">
+</head>
+<body data-page="auth" data-csrf="">
+<div class="auth-wrap">
+  <div class="auth-art"><div class="auth-art-inner">
+    <div class="brand-mark" style="width:52px;height:52px;font-size:22px">R</div>
+    <h2>یک زندگیِ<br>بههمپیوسته.</h2>
+    <p class="muted" style="max-width:420px">رومکا اهداف، زمان، بدن، ذهن و پروژههای تو را در یک سیستم واحد به هم وصل میکند؛
+      تا تصمیمها به پیشرفت قابل اندازهگیری تبدیل شوند.</p>
+    <div class="row" style="gap:8px;margin-top:10px">
+      <span class="tag accent">حافظه لایهای</span><span class="tag ok">برنامهریزی محاسباتی</span>
+      <span class="tag warn">حریم خصوصی پیشفرض</span>
+    </div>
+    <p class="faint small" style="margin-top:40px">Personal Intelligence. One Connected Life.</p>
+  </div></div>
+  <div class="auth-pane"><div class="auth-card">
+    <h2 style="margin:0 0 4px;font-size:22px">خوش آمدی</h2>
+    <p class="muted small" style="margin:0 0 24px">برای شروع وارد شوید یا حسابی بسازید.</p>
+    <div class="tabs"><button class="tab active" data-tab="login">ورود</button><button class="tab" data-tab="register">ثبتنام</button></div>
+    <form id="auth-form">
+      <div class="field"><label>ایمیل</label><input id="email" type="email" required autocomplete="email" value="owner@romka.local"></div>
+      <div class="field"><label>رمز عبور (حداقل ۸ کاراکتر)</label><input id="password" type="password" required minlength="8" autocomplete="current-password" value="RomkaDemo2026!"></div>
+      <div class="field" id="name-field" style="display:none"><label>نام نمایشی</label><input id="display_name" value="مالک رومکا"></div>
+      <button class="btn primary" id="submit-btn" style="width:100%;margin-top:6px">ورود</button>
+    </form>
+    <div class="hr"></div>
+    <button class="btn ghost" id="guest-btn" style="width:100%">شروع سریع مهمان (فقط توسعه)</button>
+    <div id="auth-msg" class="small" style="margin-top:14px"></div>
+  </div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/static/js/romka.js"></script>
+</body></html>

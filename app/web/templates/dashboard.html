@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid g-4" style="margin-bottom:16px">
+  <div class="card"><div class="kpi"><span class="l">وظایف باز</span><span class="v" id="k-tasks">—</span><span class="d" id="k-tasks-d">در انتظار برنامه</span></div></div>
+  <div class="card"><div class="kpi"><span class="l">زمان برنامهریزیشده</span><span class="v" id="k-min">—</span><span class="d">دقیقه از زمان آزاد امروز</span></div></div>
+  <div class="card"><div class="kpi"><span class="l">اشغال برنامه</span><span class="v" id="k-util">—</span><span class="d"><div class="progress" style="margin-top:7px"><i id="k-bar" style="width:0%"></i></div></span></div></div>
+  <div class="card"><div class="kpi"><span class="l">متخصصان فعال</span><span class="v" id="k-agents">—</span><span class="d" id="k-provider">موتور محلی</span></div></div>
+</div>
+<div id="runtime-notice"></div>
+<div class="grid g-main" style="margin-bottom:16px">
+  <div class="card">
+    <div class="card-h"><h2>برنامه امروز</h2><span class="hint" id="today-date">—</span></div>
+    <div class="timeline" id="today-timeline"><div class="empty">هنوز برنامهای ساخته نشده است.</div></div>
+    <div class="hr"></div>
+    <div class="row"><a class="btn sm primary" href="/planner">ساخت / تغییر برنامه</a>
+      <button class="btn sm" id="btn-light">نسخه سبک امروز</button>
+      <span class="small faint" id="plan-warn"></span></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>اولویتها و اهداف</h2><a class="hint" href="/business">مدیریت</a></div>
+    <div class="list" id="priority-list"><div class="empty">هدفی ثبت نشده است.</div></div>
+    <div class="hr"></div>
+    <div class="small faint">وضعیت حافظه</div>
+    <div class="row" style="margin-top:8px" id="mem-chips"></div>
+  </div>
+</div>
+<div class="grid g-2">
+  <div class="card">
+    <div class="card-h"><h2>نقشه تعاملی رومکا</h2><span class="hint">دادههای واقعی</span></div>
+    {% include "_anatomy.html" %}
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-h"><h2>گفتوگوی سریع</h2><a class="hint" href="/chat">باز کردن</a></div>
+      <div class="row"><input id="quick-ask" placeholder="مثلاً: امروز چطور برنامهریزی کنم؟"><button class="btn primary sm" id="quick-send">بپرس</button></div>
+      <div id="quick-answer" class="small muted" style="margin-top:12px;white-space:pre-wrap"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>هشدارها و وضعیت سیستم</h2></div>
+      <div class="list" id="sys-list"><div class="empty">در حال بارگذاری…</div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

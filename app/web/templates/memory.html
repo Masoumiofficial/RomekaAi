@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid g-main">
+  <div class="card">
+    <div class="card-h"><h2>اطلاعات ذخیرهشده</h2><div class="row"><input id="mem-q" placeholder="جستوجو…" style="width:180px"><button class="btn sm" id="mem-search">جستوجو</button>
+      <button class="btn sm ghost" id="mem-export">خروجی</button></div></div>
+    <div id="mem-conflicts"></div>
+    <div class="list" id="mem-list"></div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-h"><h2>افزودن اطلاعات</h2></div>
+      <div class="field"><label>لایه</label><select id="m-layer"><option value="preference">ترجیحات</option><option value="project">پروژه</option><option value="event">رویداد</option><option value="agent">تخصصی</option><option value="retrievable">بازیابیپذیر</option><option value="session">جلسه</option></select></div>
+      <div class="field"><label>کلید</label><input id="m-key" placeholder="مثلاً: ساعت تمرکز"></div>
+      <div class="field"><label>مقدار (متن یا JSON)</label><textarea id="m-value" placeholder="صبحها"></textarea></div>
+      <div class="field"><label>حساسیت</label><select id="m-sens"><option value="personal">شخصی</option><option value="public">عمومی</option><option value="sensitive">حساس (به AI خارجی ارسال نمیشود)</option></select></div>
+      <button class="btn primary sm" id="mem-add" style="width:100%">ذخیره</button>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>لایههای حافظه</h2></div>
+      <div class="small muted" style="line-height:2.1">
+        <div><span class="tag">session</span> جلسه جاری</div>
+        <div><span class="tag">preference</span> ترجیحات و اهداف پایدار</div>
+        <div><span class="tag">project</span> پروژهها و تصمیمها</div>
+        <div><span class="tag">event</span> گزارشهای روزانه</div>
+        <div><span class="tag">agent</span> حافظه تخصصی با دامنه دسترسی</div>
+        <div><span class="tag">retrievable</span> داده حجیم قابل جستوجو</div>
+      </div>
+      <div class="hr"></div>
+      <p class="small faint">دادههای حساس فقط به متخصصان مجاز و هرگز به ارائهدهنده خارجی بدون تنظیم صریح ارسال میشوند. میتوانید هر مورد را اصلاح یا حذف کنید.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

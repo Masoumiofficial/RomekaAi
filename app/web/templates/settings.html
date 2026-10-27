@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="tabs">
+  <button class="tab active" data-tab="general">عمومی و پروفایل</button>
+  <button class="tab" data-tab="ai">مدلها و بودجه</button>
+  <button class="tab" data-tab="skills">مهارتها و منابع متنباز</button>
+  <button class="tab" data-tab="channels">پیامرسانها</button>
+  <button class="tab" data-tab="security">امنیت و اقدامات</button>
+</div>
+<div class="panel active" id="panel-general">
+  <div class="grid g-2"><div class="card">
+    <div class="card-h"><h2>پروفایل زندگی</h2></div>
+    <div class="grid-form">
+      <div class="field"><label>بیداری (دقیقه از نیمهشب)</label><input id="s-wake" type="number" value="420"></div>
+      <div class="field"><label>خواب</label><input id="s-sleep" type="number" value="1380"></div>
+      <div class="field"><label>شروع کار</label><input id="s-work" type="number" value="540"></div>
+      <div class="field"><label>پایان کار</label><input id="s-workend" type="number" value="1080"></div>
+      <div class="field"><label>ظرفیت تمرکز روزانه (دقیقه)</label><input id="s-cap" type="number" value="300"></div>
+      <div class="field"><label>درصد بافر</label><input id="s-buf" type="number" value="15"></div>
+      <div class="field"><label>رفتآمد (دقیقه)</label><input id="s-commute" type="number" value="30"></div>
+      <div class="field"><label>منطقه زمانی</label><input id="s-tz" value="Asia/Tehran"></div>
+    </div>
+    <div class="field"><label>اهداف اصلی (کاما)</label><input id="s-goals" placeholder="انتشار گپینه، تناسب اندام"></div>
+    <button class="btn primary sm" id="save-profile">ذخیره پروفایل</button>
+  </div>
+  <div class="card"><div class="card-h"><h2>وضعیت واقعی اجرا</h2></div><div id="status-list" class="list"></div></div></div>
+</div>
+<div class="panel" id="panel-ai"><div class="grid g-2">
+  <div class="card"><div class="card-h"><h2>ارائهدهندگان</h2></div><div id="provider-list" class="list"></div>
+    <p class="small faint" style="margin-top:12px">در حال حاضر فقط آداپتور محلی (بدون کلید) و آداپتور سازگار با OpenAI پیادهسازی شدهاند. Claude/Gemini بهصورت بومی پیادهسازی نشدهاند؛ وضعیت در <span class="mono">docs/AI-PROVIDERS.md</span> مستند است.</p></div>
+  <div class="card"><div class="card-h"><h2>سقف مصرف</h2></div><div id="budget-box"></div></div>
+</div></div>
+<div class="panel" id="panel-skills">
+  <div class="card"><div class="card-h"><h2>رجیستری مهارتها و SBOM</h2><span class="hint" id="skills-meta"></span></div>
+    <div style="overflow-x:auto"><table id="skills-table"><thead><tr><th>نام</th><th>مجوز</th><th>نسخه</th><th>امتیاز</th><th>وضعیت</th><th>ریسک</th><th></th></tr></thead><tbody></tbody></table></div>
+    <p class="small faint" style="margin-top:12px">هیچ کد خارجی بهصورت خودکار اجرا نمیشود. فعالسازی فقط برای مجوزهای مجاز، ریسک پایین/متوسط و تست قبولشده انجام میشود.</p>
+  </div>
+</div>
+<div class="panel" id="panel-channels"><div class="grid g-2">
+  <div class="card"><div class="card-h"><h2>وضعیت کانالها</h2></div><div id="channel-list" class="list"></div></div>
+  <div class="card"><div class="card-h"><h2>اتصال هویت پیامرسان</h2></div>
+    <div class="field"><label>کانال</label><select id="ch-name"><option value="telegram">تلگرام</option><option value="bale">بله</option></select></div>
+    <div class="field"><label>شناسه خارجی کاربر</label><input id="ch-id" placeholder="عددی"></div>
+    <button class="btn sm" id="ch-add">اتصال</button>
+    <div id="ch-list" class="list" style="margin-top:12px"></div>
+  </div>
+</div></div>
+<div class="panel" id="panel-security"><div class="grid g-2">
+  <div class="card"><div class="card-h"><h2>رخدادهای امنیتی</h2></div><div id="sec-list" class="list"></div></div>
+  <div class="card"><div class="card-h"><h2>اقدامات و تأییدها</h2></div><div id="act-list" class="list"></div></div>
+</div></div>
+{% endblock %}
