@@ -1,0 +1,4 @@
+-r requirements.txt
+# Linux VPS only (gunicorn does not run on Windows).
+gunicorn>=21,<24
+psycopg[binary]>=3.1,<4
