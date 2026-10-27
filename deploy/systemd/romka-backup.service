@@ -1,0 +1,6 @@
+[Unit]
+Description=ROMKA daily database backup
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/romka-backup.sh
+User=romka

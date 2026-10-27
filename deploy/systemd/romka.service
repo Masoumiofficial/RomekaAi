@@ -1,0 +1,25 @@
+[Unit]
+Description=ROMKA personal intelligence
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=romka
+Group=romka
+WorkingDirectory=/opt/romka/app
+EnvironmentFile=/opt/romka/.env
+ExecStart=/opt/romka/app/.venv/bin/gunicorn app.main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 127.0.0.1:8000 --timeout 120 --access-logfile - --error-logfile -
+Restart=on-failure
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/romka/app /opt/romka/backups
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
