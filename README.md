@@ -116,6 +116,7 @@ Telegram / Bale adapters           ─┼─> FastAPI API (auth, CSRF, rate limi
 | [AGENTS](docs/AGENTS.md) | تعریف و مدیریت متخصصها |
 | [DATA-PRIVACY](docs/DATA-PRIVACY.md) | دادهها، رضایت، حذف و خروجی |
 | [OSINT-AUDIT](docs/OSINT-AUDIT.md) | ممیزی منابع متنباز و SBOM |
+| [STATUS](docs/STATUS.md) | **گزارش اول: بررسیها، تصمیمات، تستها، مسدودیتها و اقدام بعدی** |
 | [EVALUATION](docs/EVALUATION.md) | نتایج تستها و سناریوهای پذیرش |
 | [DECISIONS](docs/DECISIONS/) | ADRهای معماری |
 
