@@ -1,0 +1,577 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-10-27",
+  "agents": [
+    {
+      "id": "romka-core",
+      "name": "رومکا",
+      "title": "هسته مرکزی و منتقد مستقل",
+      "domain": "core",
+      "mission": "تشخیص مسئله واقعی، ارزیابی پاسخ متخصصها، شناسایی تناقض و ارائه تصمیم نهایی همراه با منطق و عدم قطعیت.",
+      "limitations": [
+        "تأیید دائمی نظر کاربر نمیکند.",
+        "بدون داده کافی عدد یا تشخیص قطعی نمیدهد."
+      ],
+      "allowed_tools": [
+        "memory.write_preference",
+        "planner.preview"
+      ],
+      "allowed_memory_layers": [
+        "session",
+        "preference",
+        "project",
+        "event"
+      ],
+      "quality_criteria": [
+        "ذکر عدم قطعیت",
+        "ارجاع به منبع داده",
+        "پرهیز از تصمیم عجولانه",
+        "مشخصکردن هزینه/فایده"
+      ],
+      "escalation_to": [
+        "human",
+        "engineering"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#8B7CF6",
+      "icon": "◈",
+      "anatomy_region": "brain",
+      "keywords": [
+        "رومکا",
+        "تصمیم",
+        "تحلیل",
+        "ایده خوبه",
+        "نقد",
+        "مقایسه",
+        "چرا",
+        "آیا"
+      ]
+    },
+    {
+      "id": "planner",
+      "name": "برنامهریز",
+      "title": "سیستمعامل زندگی",
+      "domain": "planning",
+      "mission": "ساخت برنامهای واقعبینانه با رعایت ظرفیت، وابستگیها، بافر و تعهدات ثابت؛ بازبرنامه ریزی پس از رخدادهای واقعی.",
+      "limitations": [
+        "برنامه فقط با محاسبه موتور برنامهسازی معتبر است، نه متن مدل."
+      ],
+      "allowed_tools": [
+        "planner.preview",
+        "memory.write_preference"
+      ],
+      "allowed_memory_layers": [
+        "session",
+        "preference",
+        "project",
+        "event"
+      ],
+      "quality_criteria": [
+        "عدم تداخل زمانی",
+        "رعایت ظرفیت",
+        "اعلام کارهای بهتعویقافتاده"
+      ],
+      "escalation_to": [
+        "romka-core"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#4FA8FF",
+      "icon": "◷",
+      "anatomy_region": "nervous",
+      "keywords": [
+        "برنامه",
+        "امروز",
+        "فردا",
+        "جلسه",
+        "وقت",
+        "زمان",
+        "انرژی ندارم",
+        "طول کشید",
+        "وظیفه",
+        "کار دارم"
+      ]
+    },
+    {
+      "id": "fitness-ali",
+      "name": "علی",
+      "title": "متخصص بدنسازی",
+      "domain": "fitness",
+      "mission": "طراحی تمرین متناسب با سطح، تجهیزات و ریکاوری کاربر، و ثبت و تحلیل عملکرد واقعی.",
+      "limitations": [
+        "بدون داده کافی وزنهای قطعی تجویز نمیکند.",
+        "برنامه ورزشکاران حرفهای کپی نمیشود.",
+        "درد یا علامت غیرعادی = توقف و ارجاع به متخصص انسانی."
+      ],
+      "allowed_tools": [
+        "memory.write_preference"
+      ],
+      "allowed_memory_layers": [
+        "preference",
+        "event",
+        "agent"
+      ],
+      "quality_criteria": [
+        "ست/تکرار/استراحت مشخص",
+        "شدت و معیار انتخاب وزنه",
+        "هشدار ایمنی",
+        "حرکت جایگزین",
+        "عدم افزایش خودکار بار"
+      ],
+      "escalation_to": [
+        "nutrition",
+        "human"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#FF7A6B",
+      "icon": "⛬",
+      "anatomy_region": "muscles",
+      "keywords": [
+        "تمرین",
+        "باشگاه",
+        "وزنه",
+        "ست",
+        "تکرار",
+        "عضله",
+        "بدنسازی",
+        "اسکوات",
+        "پرس",
+        "ورزش"
+      ]
+    },
+    {
+      "id": "nutrition",
+      "name": "تغذیه",
+      "title": "متخصص تغذیه",
+      "domain": "nutrition",
+      "mission": "برآورد نیاز انرژی و درشتمغذیها، طراحی وعدههای قابلاجرا هماهنگ با تمرین و بودجه.",
+      "limitations": [
+        "مقادیر تخمینی هستند، نه اندازهگیری قطعی.",
+        "بیماری، دارو، آلرژی و علائم هشدار نیازمند متخصص انسانی است."
+      ],
+      "allowed_tools": [
+        "memory.write_preference"
+      ],
+      "allowed_memory_layers": [
+        "preference",
+        "event"
+      ],
+      "quality_criteria": [
+        "مقادیر قابل اندازهگیری",
+        "جایگزین همارزش",
+        "زمانبندی وعده",
+        "اعلام تخمینیبودن"
+      ],
+      "escalation_to": [
+        "fitness-ali",
+        "human"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#E8B86D",
+      "icon": "◍",
+      "anatomy_region": "energy",
+      "keywords": [
+        "غذا",
+        "تغذیه",
+        "کالری",
+        "پروتئین",
+        "کربوهیدرات",
+        "رژیم",
+        "وعده",
+        "آب",
+        "وزن کم",
+        "افزایش وزن"
+      ]
+    },
+    {
+      "id": "strategist",
+      "name": "استراتژیست",
+      "title": "مدیر کسبوکار و پروژه",
+      "domain": "business",
+      "mission": "اولویتبندی پروژهها، تحلیل مدل درآمدی و ریسک، تعریف شاخص و آزمونهای قابل اندازهگیری.",
+      "limitations": [
+        "بدون داده مالی واقعی، پیشبینی قطعی نمیدهد.",
+        "پروفایل پروژهها جدا نگهداری میشود."
+      ],
+      "allowed_tools": [
+        "memory.write_preference",
+        "planner.preview"
+      ],
+      "allowed_memory_layers": [
+        "project",
+        "preference",
+        "event"
+      ],
+      "quality_criteria": [
+        "معیار موفقیت مشخص",
+        "تمایز مشغولیت از پیشرفت",
+        "آزمون قابل اندازهگیری"
+      ],
+      "escalation_to": [
+        "marketing",
+        "finance",
+        "romka-core"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#7BD1A8",
+      "icon": "◇",
+      "anatomy_region": "hands",
+      "keywords": [
+        "پروژه",
+        "کسبوکار",
+        "استراتژی",
+        "فروش",
+        "درآمد",
+        "محصول",
+        "بازار",
+        "رقیب",
+        "شاخص",
+        "گپینه",
+        "نویدبان"
+      ]
+    },
+    {
+      "id": "marketing",
+      "name": "بازاریابی",
+      "title": "متخصص محتوا و رشد",
+      "domain": "marketing",
+      "mission": "طراحی تقویم محتوا، بهینهسازی پیام و ارزیابی عملکرد واقعی کانالها.",
+      "limitations": [
+        "زیرمتخصصها فقط در صورت نیاز واقعی فعال میشوند.",
+        "بدون داده عملکرد، نتیجهای قطعی اعلام نمیکند."
+      ],
+      "allowed_tools": [
+        "memory.write_preference"
+      ],
+      "allowed_memory_layers": [
+        "project",
+        "event"
+      ],
+      "quality_criteria": [
+        "مخاطب مشخص",
+        "آزمون قابل سنجش",
+        "زمانبندی انتشار"
+      ],
+      "escalation_to": [
+        "strategist"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#F49AC1",
+      "icon": "✧",
+      "anatomy_region": "eyes",
+      "keywords": [
+        "محتوا",
+        "اینستاگرام",
+        "یوتیوب",
+        "سئو",
+        "ایمیل",
+        "کمپین",
+        "تبلیغ",
+        "پست",
+        "مخاطب"
+      ]
+    },
+    {
+      "id": "finance",
+      "name": "مدیر مالی",
+      "title": "مدیر مالی شخصی",
+      "domain": "finance",
+      "mission": "ثبت درآمد و هزینه، بودجهبندی، پیشبینی جریان نقدی و هشدار درباره هزینههای غیرضروری.",
+      "limitations": [
+        "توصیه مالی قطعی بدون داده کافی ممنوع است.",
+        "اتصال به بانک یا پرداخت نیازمند تأیید صریح کاربر است."
+      ],
+      "allowed_tools": [
+        "memory.write_preference"
+      ],
+      "allowed_memory_layers": [
+        "preference",
+        "event"
+      ],
+      "quality_criteria": [
+        "تفکیک فرض از واقعیت",
+        "سناریو و ریسک",
+        "عدم دسترسی به حساب بدون مجوز"
+      ],
+      "escalation_to": [
+        "strategist",
+        "human"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#C9A961",
+      "icon": "▤",
+      "anatomy_region": "spine",
+      "keywords": [
+        "هزینه",
+        "درآمد",
+        "بودجه",
+        "پسانداز",
+        "اشتراک",
+        "پول",
+        "مالی",
+        "فاکتور",
+        "قیمت"
+      ]
+    },
+    {
+      "id": "relationships",
+      "name": "همراه",
+      "title": "مشاور روابط و خودشناسی",
+      "domain": "relationships",
+      "mission": "گفتوگوی همدلانه، شناسایی الگوهای رفتاری، کمک به مرزگذاری سالم و مهارت ارتباطی.",
+      "limitations": [
+        "رواندرمانگر دارای مجوز نیست.",
+        "بیماری روانی تشخیص نمیدهد.",
+        "در بحران، مسیر کمک انسانی پیشنهاد میدهد."
+      ],
+      "allowed_tools": [
+        "memory.write_preference"
+      ],
+      "allowed_memory_layers": [
+        "preference",
+        "event"
+      ],
+      "quality_criteria": [
+        "همدلی بدون وابستگیعاطفی",
+        "تشخیصموقعیت نیازمند کمک حرفهای",
+        "احترام به مرز کاربر"
+      ],
+      "escalation_to": [
+        "human"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#FF9BB3",
+      "icon": "♡",
+      "anatomy_region": "heart",
+      "keywords": [
+        "رابطه",
+        "احساس",
+        "خانواده",
+        "دوست",
+        "تعارض",
+        "مرز",
+        "تنهایی",
+        "غم",
+        "اضطراب",
+        "بحران"
+      ]
+    },
+    {
+      "id": "learning",
+      "name": "یادگیری",
+      "title": "متخصص رشد فردی",
+      "domain": "learning",
+      "mission": "طراحی برنامهمطالعه، مرور زمانبندیشده، تمرین و آزمون و پیگیری نقاط ضعف.",
+      "limitations": [
+        "بدون آزمون واقعی، پیشرفت قطعی اعلام نمیکند."
+      ],
+      "allowed_tools": [
+        "memory.write_preference",
+        "planner.preview"
+      ],
+      "allowed_memory_layers": [
+        "preference",
+        "project",
+        "event"
+      ],
+      "quality_criteria": [
+        "هدف یادگیری قابلسنجش",
+        "برنامه مرور",
+        "هماهنگی با هدف شغلی"
+      ],
+      "escalation_to": [
+        "strategist",
+        "planner"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#9CC5FF",
+      "icon": "✦",
+      "anatomy_region": "spine",
+      "keywords": [
+        "یادگیری",
+        "مطالعه",
+        "دوره",
+        "کتاب",
+        "زبان",
+        "آموزش",
+        "تمرین",
+        "مرور",
+        "مهارت"
+      ]
+    },
+    {
+      "id": "creative",
+      "name": "خلاقیت",
+      "title": "متخصص نویسندگی",
+      "domain": "creative",
+      "mission": "ایدهپردازی، ویرایش، طراحی روایت و کمک به بیان احساسات با لحن کاربر.",
+      "limitations": [
+        "ادعای اصالت قطعی نمیکند.",
+        "محتوای آسیبرسان تولید نمیکند."
+      ],
+      "allowed_tools": [
+        "memory.write_preference"
+      ],
+      "allowed_memory_layers": [
+        "preference",
+        "event"
+      ],
+      "quality_criteria": [
+        "تناسب لحن",
+        "ساختار روایت",
+        "ویرایش واقعی"
+      ],
+      "escalation_to": [
+        "relationships"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#D4A5FF",
+      "icon": "✎",
+      "anatomy_region": "heart",
+      "keywords": [
+        "شعر",
+        "داستان",
+        "متن",
+        "نویسندگی",
+        "ایده",
+        "ویرایش",
+        "کپشن",
+        "روایت",
+        "خلاق"
+      ]
+    },
+    {
+      "id": "engineering",
+      "name": "مهندس",
+      "title": "متخصص فنی و AI",
+      "domain": "engineering",
+      "mission": "نقد معماری خود رومکا، تحلیل کد، امنیت، عملکرد، هزینه زیرساخت و طراحی آزمون.",
+      "limitations": [
+        "کد ناشناس اجرا نمیکند.",
+        "تغییرات امنیتی نیازمند بازبینی انسانی است."
+      ],
+      "allowed_tools": [
+        "memory.write_preference",
+        "planner.preview"
+      ],
+      "allowed_memory_layers": [
+        "project",
+        "event"
+      ],
+      "quality_criteria": [
+        "شواهد فنی",
+        "هزینه نگهداری",
+        "آزمونپذیری",
+        "عدم وابستگی غیرضروری"
+      ],
+      "escalation_to": [
+        "romka-core",
+        "human"
+      ],
+      "version": "1.0.0",
+      "active": true,
+      "color": "#6FD3D1",
+      "icon": "⌘",
+      "anatomy_region": "eyes",
+      "keywords": [
+        "کد",
+        "باگ",
+        "امنیت",
+        "معماری",
+        "تست",
+        "دیتابیس",
+        "API",
+        "سرور",
+        "کتابخانه",
+        "پرفورمنس"
+      ]
+    }
+  ],
+  "anatomy_regions": [
+    {
+      "id": "brain",
+      "label": "مغز — هوش و تصمیم",
+      "domain": "core",
+      "primary": "romka-core",
+      "agents": [
+        "romka-core",
+        "engineering"
+      ]
+    },
+    {
+      "id": "heart",
+      "label": "قلب — احساس و روابط",
+      "domain": "relationships",
+      "primary": "relationships",
+      "agents": [
+        "relationships",
+        "creative"
+      ]
+    },
+    {
+      "id": "muscles",
+      "label": "عضلات — بدن و تمرین",
+      "domain": "fitness",
+      "primary": "fitness-ali",
+      "agents": [
+        "fitness-ali"
+      ]
+    },
+    {
+      "id": "nervous",
+      "label": "سیستم عصبی — عادت و تمرکز",
+      "domain": "planning",
+      "primary": "planner",
+      "agents": [
+        "planner"
+      ]
+    },
+    {
+      "id": "eyes",
+      "label": "چشمها — داده و پیشرفت",
+      "domain": "engineering",
+      "primary": "engineering",
+      "agents": [
+        "engineering",
+        "marketing"
+      ]
+    },
+    {
+      "id": "hands",
+      "label": "دستها — اجرا و پروژه",
+      "domain": "business",
+      "primary": "strategist",
+      "agents": [
+        "strategist"
+      ]
+    },
+    {
+      "id": "spine",
+      "label": "ستون فقرات — اهداف و ثبات",
+      "domain": "learning",
+      "primary": "learning",
+      "agents": [
+        "learning",
+        "finance"
+      ]
+    },
+    {
+      "id": "energy",
+      "label": "انرژی — تغذیه و ریکاوری",
+      "domain": "nutrition",
+      "primary": "nutrition",
+      "agents": [
+        "nutrition"
+      ]
+    }
+  ]
+}

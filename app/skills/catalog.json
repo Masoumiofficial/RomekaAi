@@ -1,0 +1,257 @@
+{
+  "audit_date": "2026-10-27",
+  "source": "GitHub REST API /repos/{owner}/{repo}, /license; PyPI /pypi/{pkg}/json",
+  "candidates": [
+    {
+      "slug": "python-dateutil-rrule",
+      "name": "python-dateutil (rrule)",
+      "domain": "planning",
+      "source_url": "https://github.com/dateutil/dateutil",
+      "source_commit": "",
+      "license_spdx": "NOASSERTION",
+      "license_verified": "Apache-2.0 OR BSD-3-Clause",
+      "version": "2.9.0.post0",
+      "stars": 2641,
+      "pushed_at": "2026-10-25T23:25:23Z",
+      "required_permissions": [
+        "pure_python"
+      ],
+      "dependency_count": 1,
+      "risk_level": "low",
+      "fit": 19,
+      "decision": "integrate",
+      "status": "approved",
+      "evaluation_notes": "RFC 5545 recurrence is error-prone to reimplement. Pure Python, one small dependency (six). GitHub license metadata is NOASSERTION, but the LICENSE file itself was fetched via /repos/dateutil/dateutil/license: it is the standard Apache-2.0 text plus the pre-2017 BSD-3-Clause dual-license notice. Both are permissive and compatible. Integrated ONLY behind app.planning.engine.expand_recurrence so upstream code stays untouched.",
+      "test_result": "pass: tests/test_planning.py::test_recurrence_expansion (weekly MO,WE -> 2026-10-28, 11-02, 11-04, 11-09)"
+    },
+    {
+      "slug": "fastapi",
+      "name": "FastAPI",
+      "domain": "backend",
+      "source_url": "https://github.com/fastapi/fastapi",
+      "license_spdx": "MIT",
+      "version": "0.162.0",
+      "stars": 104141,
+      "pushed_at": "2026-10-27T04:56:28Z",
+      "required_permissions": [
+        "framework"
+      ],
+      "dependency_count": 3,
+      "risk_level": "low",
+      "fit": 18,
+      "decision": "integrate",
+      "status": "approved",
+      "evaluation_notes": "Mature, MIT, typed validation via Pydantic, no build step for the UI. Chosen as API layer.",
+      "test_result": "pass: integration tests via fastapi.testclient.TestClient"
+    },
+    {
+      "slug": "sqlalchemy",
+      "name": "SQLAlchemy + Alembic",
+      "domain": "data",
+      "source_url": "https://github.com/sqlalchemy/sqlalchemy",
+      "license_spdx": "MIT",
+      "version": "2.1.6",
+      "stars": 12267,
+      "pushed_at": "2026-10-27T15:12:45Z",
+      "required_permissions": [
+        "framework"
+      ],
+      "dependency_count": 2,
+      "risk_level": "low",
+      "fit": 18,
+      "decision": "integrate",
+      "status": "approved",
+      "evaluation_notes": "Versioned migrations and ORM-only queries (no string SQL) reduce injection risk. SQLite locally / PostgreSQL on VPS.",
+      "test_result": "pass: alembic upgrade head + repository integration tests"
+    },
+    {
+      "slug": "fullcalendar",
+      "name": "FullCalendar",
+      "domain": "ui",
+      "source_url": "https://github.com/fullcalendar/fullcalendar",
+      "license_spdx": "MIT",
+      "version": "unpinned",
+      "stars": 20725,
+      "pushed_at": "2026-10-16T03:03:44Z",
+      "required_permissions": [
+        "browser"
+      ],
+      "dependency_count": 0,
+      "risk_level": "low",
+      "fit": 13,
+      "decision": "defer",
+      "status": "evaluated",
+      "evaluation_notes": "Excellent calendar UX, but our planner currently has one day view and no build pipeline. Adds ~200KB JS for a need we do not have yet. Re-evaluate when weekly/monthly drag-and-drop is required.",
+      "test_result": "not run (deferred)"
+    },
+    {
+      "slug": "chartjs",
+      "name": "Chart.js",
+      "domain": "ui",
+      "source_url": "https://github.com/chartjs/Chart.js",
+      "license_spdx": "MIT",
+      "version": "unpinned",
+      "stars": 67763,
+      "pushed_at": "2026-10-23T11:47:55Z",
+      "required_permissions": [
+        "browser"
+      ],
+      "dependency_count": 0,
+      "risk_level": "low",
+      "fit": 11,
+      "decision": "defer",
+      "status": "evaluated",
+      "evaluation_notes": "Charts must be based on real data. With only a few logged days, hand-drawn inline SVG from real records is lighter. Re-evaluate at >=30 data points.",
+      "test_result": "not run (deferred)"
+    },
+    {
+      "slug": "langgraph",
+      "name": "LangGraph",
+      "domain": "agents",
+      "source_url": "https://github.com/langchain-ai/langgraph",
+      "license_spdx": "MIT",
+      "version": "unpinned",
+      "stars": 43993,
+      "pushed_at": "2026-10-27T18:37:51Z",
+      "required_permissions": [
+        "framework",
+        "network"
+      ],
+      "dependency_count": 8,
+      "risk_level": "medium",
+      "fit": 8,
+      "decision": "reject",
+      "status": "rejected",
+      "evaluation_notes": "Powerful, but replaces our deterministic orchestrator with a graph runtime and a large dependency tree. At this phase a single model plus scoped tools is cheaper and more testable. More agents do not imply better answers. Revisit only if stateful branching workflows become a measured need.",
+      "test_result": "not run (rejected)"
+    },
+    {
+      "slug": "crewai",
+      "name": "crewAI",
+      "domain": "agents",
+      "source_url": "https://github.com/crewAIInc/crewAI",
+      "license_spdx": "MIT",
+      "version": "unpinned",
+      "stars": 60174,
+      "pushed_at": "2026-10-27T18:35:14Z",
+      "required_permissions": [
+        "framework",
+        "network",
+        "code_exec"
+      ],
+      "dependency_count": 12,
+      "risk_level": "high",
+      "fit": 7,
+      "decision": "reject",
+      "status": "rejected",
+      "evaluation_notes": "Requests broad tool access including code execution. Violates the rule that a skill must not gain shell/network rights by being installed.",
+      "test_result": "not run (rejected)"
+    },
+    {
+      "slug": "mem0",
+      "name": "mem0",
+      "domain": "memory",
+      "source_url": "https://github.com/mem0ai/mem0",
+      "license_spdx": "Apache-2.0",
+      "version": "unpinned",
+      "stars": 67922,
+      "pushed_at": "2026-10-26T14:51:55Z",
+      "required_permissions": [
+        "framework",
+        "network",
+        "vector_db"
+      ],
+      "dependency_count": 14,
+      "risk_level": "high",
+      "fit": 12,
+      "decision": "reject",
+      "status": "rejected",
+      "evaluation_notes": "Would move personal memory into an external vector store/service. Privacy and vendor lock-in costs exceed benefit while the dataset is small. Our scoped SQL memory keeps data local.",
+      "test_result": "not run (rejected)"
+    },
+    {
+      "slug": "mcp-servers",
+      "name": "Model Context Protocol servers",
+      "domain": "tools",
+      "source_url": "https://github.com/modelcontextprotocol/servers",
+      "license_spdx": "NOASSERTION",
+      "version": "unpinned",
+      "stars": 91607,
+      "pushed_at": "2026-10-27T13:43:37Z",
+      "required_permissions": [
+        "network",
+        "filesystem_read",
+        "code_exec"
+      ],
+      "dependency_count": 10,
+      "risk_level": "high",
+      "fit": 10,
+      "decision": "needs_review",
+      "status": "needs_legal_review",
+      "evaluation_notes": "Repository-wide license metadata is NOASSERTION (per-server licenses differ). Broad filesystem/exec permissions. Requires per-server license and supply-chain review before ANY adoption.",
+      "test_result": "not run (blocked: license + permissions)"
+    },
+    {
+      "slug": "anthropics-skills",
+      "name": "Anthropic Agent Skills",
+      "domain": "skills",
+      "source_url": "https://github.com/anthropics/skills",
+      "license_spdx": "",
+      "version": "unpinned",
+      "stars": 184201,
+      "pushed_at": "2026-10-09T18:45:52Z",
+      "required_permissions": [
+        "prompt_data"
+      ],
+      "dependency_count": 0,
+      "risk_level": "medium",
+      "fit": 14,
+      "decision": "needs_review",
+      "status": "needs_legal_review",
+      "evaluation_notes": "GitHub API reports NO license field for the repository. Skill files are untrusted data and may contain prompt injection. Must be treated as reference only until license is clarified; never auto-executed.",
+      "test_result": "not run (blocked: license missing)"
+    },
+    {
+      "slug": "autogen",
+      "name": "Microsoft AutoGen",
+      "domain": "agents",
+      "source_url": "https://github.com/microsoft/autogen",
+      "license_spdx": "CC-BY-4.0",
+      "version": "unpinned",
+      "stars": 61588,
+      "pushed_at": "2026-10-16T16:14:37Z",
+      "required_permissions": [
+        "framework",
+        "network",
+        "code_exec"
+      ],
+      "dependency_count": 11,
+      "risk_level": "high",
+      "fit": 8,
+      "decision": "needs_review",
+      "status": "needs_legal_review",
+      "evaluation_notes": "Repository license metadata resolves to CC-BY-4.0 (a content license, ambiguous for code reuse). Combined with code-exec permissions, integration is blocked pending legal clarification.",
+      "test_result": "not run (blocked: license + permissions)"
+    },
+    {
+      "slug": "apscheduler",
+      "name": "APScheduler",
+      "domain": "jobs",
+      "source_url": "https://github.com/agronholm/apscheduler",
+      "license_spdx": "MIT",
+      "version": "unpinned",
+      "stars": 7672,
+      "pushed_at": "2026-10-26T19:55:38Z",
+      "required_permissions": [
+        "framework"
+      ],
+      "dependency_count": 2,
+      "risk_level": "low",
+      "fit": 13,
+      "decision": "defer",
+      "status": "evaluated",
+      "evaluation_notes": "Will be needed for morning/evening review reminders. Not integrated yet: no scheduled job exists in this phase, and an idle scheduler adds a process with no value.",
+      "test_result": "not run (deferred)"
+    }
+  ]
+}
