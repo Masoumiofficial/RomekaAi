@@ -1,4 +1,4 @@
-# START HERE — ROMKA v0.2.1
+# START HERE — ROMKA v0.2.3
 
 این بسته، نسخهٔ کامل و قابل اجرای ROMKA روی سیستم خودتان است. هیچ کلید API و هیچ
 توکنی داخل بسته نیست؛ همهٔ فایل‌های حساس (`romka.db`، `.env`، `.romka_dev_secret`)
@@ -11,7 +11,9 @@
 پیش‌نیاز: **Python 3.11 یا 3.12** از <https://www.python.org/downloads/windows/>
 (در نصب، تیک `Add python.exe to PATH` را بزنید).
 
-1. پوشه را از حالت zip خارج کنید (مثلاً `C:\romka`؛ مسیر با فاصله و حروف فارسی نباشد).
+1. آرشیو را در درایو `C:\` خارج کنید؛ خودِ zip یک پوشهٔ `romka` می‌سازد
+   (`Expand-Archive romka-v0.2.3.zip -DestinationPath C:\`) — مسیر با فاصله و حروف
+   فارسی نباشد.
 2. در PowerShell داخل همان پوشه اجرا کنید:
 
 ```powershell
@@ -56,7 +58,7 @@ unzip romka-v0.2.0.zip -d romka && cd romka
 # لینوکس:  ./scripts/setup.sh --test-only   یا:  . .venv/bin/activate && pytest -q
 ```
 
-انتظار: **۱۳۹ تست عبور می‌کند** (بدون هیچ سرویس خارجی و بدون کلید API).
+انتظار: **۱۴۶ تست عبور می‌کند** (بدون هیچ سرویس خارجی و بدون کلید API).
 
 سالم‌بودن سرور: <http://127.0.0.1:8000/api/v1/health> باید `{"ok": true}` بدهد.
 
@@ -153,21 +155,35 @@ Python/venv سالم است یا نه، وابستگی‌ها نصب‌اند ی
 **علت:** پورت شما در اختیار یک سرور دیگر است (اغلب یک `python -m http.server` که از
 قبل باز مانده)، پس uvicorn نتوانسته bind شود و شما به همان سرور قدیمی وصل می‌شوید.
 
-**راه‌حل:**
+**راه‌حل (ساده‌ترین راه — هیچ PIDای تایپ نکنید):**
 
 ```powershell
-# ۱) ببینید چه کسی پورت را گرفته (doctor نام و PID را می‌گوید)
+# ۱) ببینید چه چیزی پورت را گرفته (نام برنامه و PID را نشان می‌دهد)
 .venv\Scripts\python.exe scripts\doctor.py --only port --port 8000
 
-# ۲) آن برنامه را ببندید (پنجره‌اش را ببندید یا:)
-taskkill /PID <PID> /F
+# ۲) بگذارید خودِ ابزار پورت را آزاد کند (قبلش تأیید می‌گیرد)
+.venv\Scripts\python.exe scripts\doctor.py --only port --port 8000 --stop-owner
+#    یا یک‌مرحله‌ای: ROMKA را با آزادسازی پورت بالا بیاورید
+.\scripts\run_dev.ps1 -FreePort
 
-# ۳) ROMKA را بالا بیاورید (اسکریپت خودش پورت را بررسی می‌کند)
-.\scripts\run_dev.ps1
-
-# یا با پورت دیگر:
+# ۳) یا فقط پورت دیگری انتخاب کنید
 .\scripts\run_dev.ps1 -Port 8010
 ```
+
+> ⚠️ **در PowerShell هرگز `taskkill /PID <PID> /F` را تایپ نکنید.** کاراکتر `<`
+> در PowerShell عملگر ریدایرکت است و این خطا را می‌دهد:
+> `The '<' operator is reserved for future use.` (همان خطایی که دیدید).
+> اگر خودتان می‌خواهید PID را پیدا کنید، این شکل درست است:
+>
+> ```powershell
+> $ownerPid = (Get-NetTCPConnection -LocalPort 8000 -State Listen).OwningProcess
+> Stop-Process -Id $ownerPid -Force
+> ```
+>
+> (نام متغیر را `$ownerPid` گذاشتیم چون `$PID` در PowerShell متغیر خودکارِ
+> «شناسهٔ همین نشست» است و قابل مقداردهی نیست.)
+> روش بدون وابستگی: `netstat -ano | Select-String ":8000"` سپس
+> `taskkill /PID 12345 /F` با **عدد واقعی** به‌جای `<PID>`.
 
 از نسخهٔ ۰٫۲٫۱، `run_dev.ps1` و `run_dev.sh` **قبل از شروع** پورت را بررسی می‌کنند:
 اگر ROMKA از قبل بالا باشد فقط مرورگر را باز می‌کنند، و اگر برنامهٔ دیگری آن را گرفته
@@ -186,8 +202,9 @@ curl.exe -i http://127.0.0.1:8000/api/v1/health
 | `python` شناخته نمی‌شود | Python را با گزینهٔ «Add to PATH» نصب کنید یا `py -3.11 scripts\...` |
 | `Activate.ps1 cannot be loaded` | `Set-ExecutionPolicy -Scope Process Bypass` |
 | `Port 8000 already in use` | `.\scripts\run_dev.ps1 -Port 8010` (یا `PORT=8010 ./scripts/run_dev.sh`) |
-| صفحهٔ `Error code: 404 / File not found / Nothing matches the given URI` | سرور دیگری روی پورت است؛ `scripts/doctor.py --only port` را اجرا و PID را ببندید |
+| صفحهٔ `Error code: 404 / File not found / Nothing matches the given URI` | سرور دیگری روی پورت است؛ `run_dev.ps1 -FreePort` (پورت را آزاد می‌کند) یا `run_dev.ps1 -Port 8010` |
+| `The '<' operator is reserved for future use` | جای `<PID>` عدد بگذارید، یا بهتر: `run_dev.ps1 -FreePort` را اجرا کنید |
 | `no such table` | `alembic upgrade head` را اجرا کنید (اسکریپت setup خودش انجام می‌دهد) |
 | ورود دمو ناموفق | مطمئن شوید `ROMKA_AUTO_DEMO=true` و `ENVIRONMENT=development` است |
 
-نسخه: `0.2.1` · همهٔ ۱۳۹ تست در زمان ساخت این بسته روی محتوای همین zip اجرا شد.
+نسخه: `0.2.3` · همهٔ ۱۴۶ تست در زمان ساخت این بسته روی محتوای همین zip اجرا شد.

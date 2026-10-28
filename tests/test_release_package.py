@@ -29,9 +29,19 @@ def archive(tmp_path_factory) -> Path:
     return build_release.build(out)
 
 
+PREFIX = build_release.DEFAULT_PREFIX
+
+
 def _names(archive: Path) -> set[str]:
+    """Archive entries relative to the single top-level folder."""
     with zipfile.ZipFile(archive) as z:
-        return set(z.namelist())
+        return {n.split("/", 1)[1] for n in z.namelist()
+                if n.startswith(f"{PREFIX}/") and n != f"{PREFIX}/"}
+
+
+def _all_entries(archive: Path) -> list[str]:
+    with zipfile.ZipFile(archive) as z:
+        return z.namelist()
 
 
 def test_archive_is_a_valid_non_empty_zip(archive):
@@ -60,6 +70,16 @@ def test_archive_never_ships_local_state_or_secrets(archive):
         assert bad not in names
     assert not [n for n in names if n.endswith((".db", ".db-wal", ".db-shm", ".pyc", ".log"))]
     assert not [n for n in names if n.startswith((".git/", ".venv/", "__pycache__/"))]
+
+
+def test_archive_has_a_single_top_level_folder(archive):
+    """Otherwise extracting scatters 130 files over the user's directory."""
+    entries = _all_entries(archive)
+    assert entries, "empty archive"
+    top = {n.split("/", 1)[0] for n in entries}
+    assert top == {PREFIX}, f"expected one root folder, found {sorted(top)[:5]}"
+    assert f"{PREFIX}/START_HERE.md" in entries
+    assert f"{PREFIX}/scripts/setup.ps1" in entries
 
 
 PLACEHOLDERS = ("YOUR_", "CHANGE_ME", "CHANGEME", "PLACEHOLDER", "EXAMPLE", "XXX", "TODO")

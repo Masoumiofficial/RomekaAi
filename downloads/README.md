@@ -7,9 +7,9 @@
 
 | فایل | نسخه |
 |---|---|
-| ~~`romka-v0.2.0.zip`~~ | جایگزین شد با ۰٫۲٫۱ (عیب‌یاب پورت + اسکریپت‌های ایمن) |
-| `romka-v0.2.1.zip` | 0.2.1 (نسخهٔ فعلی) |
-| `romka-v0.2.1.zip.sha256` | هش معتبر همین فایل |
+| ~~`romka-v0.2.0.zip`~~ · ~~`romka-v0.2.1.zip`~~ | جایگزین شدند با ۰٫۲٫۲ |
+| `romka-v0.2.3.zip` | 0.2.3 (نسخهٔ فعلی) |
+| `romka-v0.2.3.zip.sha256` | هش معتبر همین فایل |
 
 > هش داخل متن تکرار نمی‌شود؛ مرجع، فایل `.sha256` است تا با هر بازسازی خودش
 > هم‌زمان به‌روز شود.
@@ -17,14 +17,14 @@
 ## بازسازی و بررسی
 
 ```bash
-python scripts/build_release.py --version 0.2.1 --sha256-file
-sha256sum release/romka-v0.2.1.zip        # ویندوز: Get-FileHash -Algorithm SHA256
+python scripts/build_release.py --version 0.2.3 --sha256-file
+sha256sum release/romka-v0.2.3.zip        # ویندوز: Get-FileHash -Algorithm SHA256
 ```
 
 ## نصب پس از دانلود
 
 ```bash
-unzip romka-v0.2.1.zip -d romka && cd romka
+unzip romka-v0.2.3.zip -d romka && cd romka
 ./scripts/setup.sh && ./scripts/run_dev.sh
 ```
 

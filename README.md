@@ -17,13 +17,13 @@
 
 | | |
 |---|---|
-| **آرشیو تست‌شده** | [`downloads/romka-v0.2.1.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.1.zip) |
-| **چک‌سام** | [`downloads/romka-v0.2.1.zip.sha256`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.1.zip.sha256) |
+| **آرشیو تست‌شده** | [`downloads/romka-v0.2.3.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.3.zip) |
+| **چک‌سام** | [`downloads/romka-v0.2.3.zip.sha256`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.3.zip.sha256) |
 | **راهنمای نصب** | [`START_HERE.md`](START_HERE.md) |
 
 ```bash
-# ویندوز (PowerShell):  Expand-Archive romka-v0.2.1.zip C:\romka ; cd C:\romka
-unzip romka-v0.2.1.zip -d romka && cd romka
+# ویندوز (PowerShell):  Expand-Archive romka-v0.2.3.zip C:\ ; cd C:\romka
+unzip romka-v0.2.3.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
 ./scripts/setup.sh && ./scripts/run_dev.sh      # ویندوز: .\scripts\setup.ps1 و .\scripts\run_dev.ps1
 ```
 
@@ -31,7 +31,7 @@ unzip romka-v0.2.1.zip -d romka && cd romka
 `demo@romka.local` / `RomkaDemo2026!`
 
 > این آرشیو همان بایتی است که از پوشهٔ خالی استخراج، نصب و تست شد. هش معتبر همیشه
-> در فایل `downloads/romka-v0.2.1.zip.sha256` کنار خود آرشیو است (چون هر تغییر
+> در فایل `downloads/romka-v0.2.3.zip.sha256` کنار خود آرشیو است (چون هر تغییر
 > مستندات هش را عوض می‌کند، عدد در متن‌ها تکرار نمی‌شود). ساختش تکرارپذیر است:
 > `python scripts/build_release.py`. اگر مرورگر صفحهٔ
 > `404 File not found` نشان داد، یعنی سرور دیگری روی پورت است: `python scripts/doctor.py`.

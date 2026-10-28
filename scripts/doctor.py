@@ -23,6 +23,15 @@ Usage
     python scripts/doctor.py --port 8000
     python scripts/doctor.py --only port --port 8000
     python scripts/doctor.py --only port --port 8000 --quiet   # for run_dev
+    python scripts/doctor.py --only port --port 8000 --stop-owner   # asks first
+    python scripts/doctor.py --only port --port 8000 --stop-owner --yes
+
+``--stop-owner`` exists because documentation that says "``taskkill /PID
+<your-pid> /F``" is a trap: PowerShell parses ``<`` as redirection ("The '<'
+operator is reserved for future use"). The tool finds the PID itself and refuses
+to kill anything that is not the process actually listening on that port, never
+touches ROMKA/uvicorn, never touches system processes or its own process tree,
+and asks for confirmation unless ``--yes`` is given in a non-interactive run.
 """
 from __future__ import annotations
 
@@ -31,10 +40,12 @@ import json
 import os
 import platform
 import re
+import signal
 import socket
 import sqlite3
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -156,6 +167,124 @@ def check_db(rep: Report) -> bool:
     return True
 
 
+def _owning_pid_number(port: int) -> int | None:
+    try:
+        if os.name == "nt":
+            out = subprocess.run(["netstat", "-ano"], capture_output=True, text=True).stdout
+            for line in out.splitlines():
+                parts = line.split()
+                if len(parts) >= 5 and parts[1].endswith(f":{port}") and parts[3] == "LISTENING":
+                    return int(parts[4])
+        else:
+            out = subprocess.run(["ss", "-ltnp"], capture_output=True, text=True).stdout
+            for line in out.splitlines():
+                if f":{port} " in line:
+                    match = re.search(r"pid=(\d+)", line)
+                    if match:
+                        return int(match.group(1))
+    except (OSError, subprocess.SubprocessError, ValueError):
+        pass
+    return None
+
+
+def process_details(pid: int) -> dict:
+    """Name + command line of a PID, using only what the OS already provides."""
+    details: dict = {"pid": pid, "name": "", "cmdline": ""}
+    try:
+        if os.name == "nt":
+            out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                                 capture_output=True, text=True).stdout.strip()
+            if out and "," in out:
+                details["name"] = out.split(",")[0].strip('"')
+            wmic = subprocess.run(
+                ["wmic", "process", "where", f"ProcessId={pid}", "get", "CommandLine", "/value"],
+                capture_output=True, text=True).stdout
+            if "CommandLine=" in wmic:
+                details["cmdline"] = wmic.split("CommandLine=", 1)[1].strip()
+        else:
+            cmdline = Path(f"/proc/{pid}/cmdline")
+            if cmdline.exists():
+                details["cmdline"] = cmdline.read_bytes().replace(b"\x00", b" ").decode(
+                    "utf-8", errors="ignore").strip()
+            comm = Path(f"/proc/{pid}/comm")
+            if comm.exists():
+                details["name"] = comm.read_text(encoding="utf-8", errors="ignore").strip()
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return details
+
+
+PROTECTED_PIDS = {0, 1, 4}
+# Marker matching is deliberately narrow. A bare "romka" must NOT be a marker:
+# the project folder is usually called romka (e.g. C:\romka), so every process
+# started from inside it - including an innocent `python -m http.server` - would
+# look like ROMKA and the tool would refuse to free the port.
+ROMKA_CMD_MARKERS = ("uvicorn", "app.main:app", "romka-dev", "run_dev.sh", "run_dev.ps1")
+ROMKA_NAMES = {"romka", "romka.exe", "romka-dev", "romka-dev.exe", "romka-server"}
+
+
+def protected_reason(pid: int, details: dict) -> str:
+    """Why this PID must NOT be killed by us (empty string = safe to stop)."""
+    if pid in PROTECTED_PIDS or pid == os.getpid() or pid == os.getppid():
+        return "system process, this tool, or its parent"
+    name = str(details.get("name", "")).lower().strip()
+    cmdline = str(details.get("cmdline", "")).lower()
+    if name in ROMKA_NAMES or any(marker in cmdline for marker in ROMKA_CMD_MARKERS):
+        return "it looks like ROMKA/uvicorn itself (use CTRL+C in its window instead)"
+    if details.get("name", "").lower() in {"system", "init", "systemd", "sshd", "launchd"}:
+        return f"{details['name']} is a system service"
+    return ""
+
+
+def stop_owner(port: int, *, assume_yes: bool) -> int:
+    """Stop the process listening on ``port`` after explicit confirmation."""
+    pid = _owning_pid_number(port)
+    if pid is None:
+        print(f"No listener found on port {port} (nothing to stop).")
+        return 0
+    details = process_details(pid)
+    label = f"PID {pid} ({details.get('name') or 'unknown'})"
+    reason = protected_reason(pid, details)
+    if reason:
+        print(f"Refusing to stop {label}: {reason}.")
+        print("Close it yourself, or start ROMKA on another port: --port 8010")
+        return 14
+    print(f"Process holding port {port}: {label}")
+    if details.get("cmdline"):
+        print(f"  command line: {details['cmdline'][:200]}")
+    if not assume_yes:
+        if not sys.stdin or not sys.stdin.isatty():
+            print("Stopping a process needs confirmation; re-run with --yes to allow it.")
+            return 14
+        answer = input(f"Stop {label}? [y/N] ").strip().lower()
+        if answer not in {"y", "yes"}:
+            print("Cancelled — nothing was stopped.")
+            return 14
+    try:
+        if os.name == "nt":
+            done = subprocess.run(["taskkill", "/PID", str(pid), "/F"],
+                                  capture_output=True, text=True)
+            if done.returncode != 0:
+                print(f"taskkill failed: {(done.stderr or done.stdout).strip()}")
+                return 14
+        else:
+            os.kill(pid, signal.SIGTERM)
+            for _ in range(20):
+                time.sleep(0.1)
+                try:
+                    os.kill(pid, 0)
+                except OSError:
+                    break
+            else:
+                os.kill(pid, signal.SIGKILL)
+        print(f"Stopped {label}. Port {port} should be free now.")
+        return 0
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"Could not stop {label}: {exc}")
+        print("Close it manually, or start ROMKA on another port: --port 8010")
+        return 14
+
+
 def _owning_pid(port: int) -> str:
     try:
         if os.name == "nt":
@@ -228,7 +357,11 @@ def check_port(rep: Report, port: int) -> int:
                  f"a static file server (python -m http.server style) owns this port. {who}\n"
                  f"       That is why you saw '404 File not found': it looks for files, "
                  f"not for ROMKA routes such as /auth.",
-                 ["stop that server (close its window, or: taskkill /PID <pid> /F)",
+                 ["free the port automatically (asks first):  "
+                  f"powershell: .\\.venv\\Scripts\\python.exe scripts\\doctor.py "
+                  f"--only port --port {port} --stop-owner",
+                  "or close that server's window yourself (in PowerShell never paste an "
+                  "angle-bracket placeholder into taskkill: '<' is a redirection operator)",
                   "then start ROMKA:  .\\scripts\\run_dev.ps1   (Linux/macOS: ./scripts/run_dev.sh)",
                   "or use another port:  .\\scripts\\run_dev.ps1 -Port 8010"])
         return 13
@@ -244,7 +377,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
     ap.add_argument("--only", choices=["all", "venv", "env", "db", "port"], default="all")
     ap.add_argument("--quiet", action="store_true", help="print only problems")
+    ap.add_argument("--stop-owner", "--free-port", dest="stop_owner", action="store_true",
+                    help="stop the process holding --port (asks first unless --yes)")
+    ap.add_argument("--yes", action="store_true",
+                    help="with --stop-owner: do not ask (needed in non-interactive runs)")
     args = ap.parse_args(argv)
+
+    if args.stop_owner:
+        info = probe_port(args.port)
+        if info["state"] == "free":
+            print(f"Port {args.port} is already free.")
+            return 0
+        if info["state"] == "romka":
+            print(f"Port {args.port} is served by ROMKA already (v"
+                  f"{info.get('health', {}).get('version')}) — nothing to stop.")
+            return 15
+        return stop_owner(args.port, assume_yes=args.yes)
 
     rep = Report(quiet=args.quiet)
     print(f"ROMKA doctor · {ROOT}")

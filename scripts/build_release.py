@@ -35,9 +35,10 @@ def _is_secret_env(name: str) -> bool:
         return False
     return not name.endswith(ENV_KEEP_SUFFIXES)
 FIXED_TIME = (2026, 10, 28, 0, 0, 0)
+DEFAULT_PREFIX = "romka"
 
 
-def collect() -> list[tuple[Path, str]]:
+def collect(prefix: str = "") -> list[tuple[Path, str]]:
     out: list[tuple[Path, str]] = []
     for path in sorted(ROOT.rglob("*")):
         rel = path.relative_to(ROOT)
@@ -47,13 +48,19 @@ def collect() -> list[tuple[Path, str]]:
             continue
         if path.name.startswith(SKIP_NAME_PREFIXES) or _is_secret_env(path.name):
             continue
-        out.append((path, rel.as_posix()))
+        out.append((path, f"{prefix}/{rel.as_posix()}" if prefix else rel.as_posix()))
     assert out, "nothing to archive — wrong project root?"
     return out
 
 
-def build(out_path: Path) -> Path:
-    files = collect()
+def build(out_path: Path, prefix: str = DEFAULT_PREFIX) -> Path:
+    """Build the archive. ``prefix`` puts everything under one folder.
+
+    Without it, extracting the zip scatters 130 files into whatever directory the
+    user is standing in (found by testing the real archive). With it,
+    ``Expand-Archive -DestinationPath C:\\`` or ``unzip`` always yields ``romka/``.
+    """
+    files = collect(prefix)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path, arcname in files:
@@ -70,14 +77,16 @@ def main() -> int:
     ap.add_argument("--version", default="0.2.0")
     ap.add_argument("--out", default="")
     ap.add_argument("--sha256-file", action="store_true", help="also write <zip>.sha256")
+    ap.add_argument("--prefix", default=DEFAULT_PREFIX,
+                    help="single top-level folder inside the zip (default: romka; '' = none)")
     args = ap.parse_args()
 
     out = Path(args.out) if args.out else ROOT / "release" / f"romka-v{args.version}.zip"
-    build(out)
+    build(out, prefix=args.prefix)
     digest = hashlib.sha256(out.read_bytes()).hexdigest()
     size = out.stat().st_size
     print(f"archive : {out}")
-    print(f"files   : {len(collect())}")
+    print(f"files   : {len(collect(args.prefix))}")
     print(f"size    : {size:,} bytes ({size / 1024:.1f} KiB)")
     print(f"sha256  : {digest}")
     if args.sha256_file:

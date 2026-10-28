@@ -9,6 +9,7 @@ The doctor has to tell those two apart, because the fix differs completely.
 from __future__ import annotations
 
 import json
+import os
 import socket
 import subprocess
 import sys
@@ -107,8 +108,10 @@ def test_foreign_static_server_fails_the_check_with_actionable_fix(static_server
     assert code == 13
     assert "NOT ROMKA" in out
     assert "404 File not found" in out          # names the user's exact symptom
-    assert any("taskkill" in fix or "stop that server" in fix for fix in report.failures)
+    assert any("--stop-owner" in fix for fix in report.failures)
     assert any("Port 8010" in fix for fix in report.failures)
+    # No copy-paste trap: PowerShell treats '<PID>' as a redirection operator.
+    assert not any("<PID>" in fix or "<pid>" in fix for fix in report.failures)
 
 
 def test_romka_is_recognised_by_its_health_json(romka_like_server, capsys):
@@ -180,11 +183,98 @@ def test_run_dev_refuses_to_start_on_a_foreign_port(static_server):
     assert "not usable" in result.stderr
 
 
+# ── --stop-owner: free the port without the user typing a PID ───────────────
+
+def _spawn_static(port: int) -> subprocess.Popen:
+    proc = subprocess.Popen([sys.executable, "-m", "http.server", str(port),
+                             "--bind", "127.0.0.1"],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for _ in range(50):
+        if doctor.probe_port(port)["state"] != "free":
+            return proc
+        time.sleep(0.1)
+    proc.kill()
+    raise AssertionError("static server did not start")
+
+
+def test_stop_owner_refuses_without_confirmation_in_non_interactive_run(capsys):
+    port = _free_port()
+    proc = _spawn_static(port)
+    try:
+        assert doctor.stop_owner(port, assume_yes=False) == 14
+        out = capsys.readouterr().out
+        assert "re-run with --yes" in out
+        assert doctor.probe_port(port)["state"] != "free"   # nothing was killed
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)
+
+
+def test_stop_owner_kills_only_the_listener_and_frees_the_port(capsys):
+    port = _free_port()
+    proc = _spawn_static(port)
+    try:
+        assert doctor.stop_owner(port, assume_yes=True) == 0
+        out = capsys.readouterr().out
+        assert "Stopped PID" in out
+        proc.wait(timeout=10)
+        time.sleep(0.3)
+        assert doctor.probe_port(port)["state"] == "free"
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+
+
+def test_protected_reason_blocks_romka_system_and_self():
+    """Never kill ROMKA/uvicorn, system services, this tool, or its parent."""
+    romka = doctor.protected_reason(
+        4726, {"name": "python.exe", "cmdline": "python -m uvicorn app.main:app"})
+    assert "ROMKA" in romka or "uvicorn" in romka
+    assert doctor.protected_reason(1, {"name": "systemd", "cmdline": "/sbin/init"}) != ""
+    assert doctor.protected_reason(4, {"name": "System", "cmdline": ""}) != ""
+    assert doctor.protected_reason(os.getpid(), {"name": "python", "cmdline": "pytest"}) != ""
+    assert doctor.protected_reason(4242, {"name": "python",
+                                          "cmdline": "python -m http.server"}) == ""
+
+
+def test_project_folder_named_romka_is_not_mistaken_for_romka_itself():
+    """Regression: the folder is usually C:\\romka, so a bare 'romka' marker made
+    every process started there look like ROMKA and blocked --stop-owner."""
+    inside = {"name": "python.exe",
+              "cmdline": "C:\\romka\\.venv\\Scripts\\python.exe -m http.server 8000"}
+    assert doctor.protected_reason(4242, inside) == ""
+
+    our_server = {"name": "python.exe",
+                  "cmdline": "C:\\romka\\.venv\\Scripts\\python.exe -m uvicorn "
+                             "app.main:app --port 8000"}
+    assert "ROMKA" in doctor.protected_reason(4242, our_server)
+
+    assert doctor.protected_reason(4242, {"name": "romka.exe",
+                                          "cmdline": "C:\\apps\\romka.exe"}) != ""
+
+
+def test_stop_owner_is_not_offered_for_a_free_port(capsys):
+    assert doctor.stop_owner(_free_port(), assume_yes=True) == 0
+    assert "nothing to stop" in capsys.readouterr().out.lower()
+
+
+def test_windows_scripts_never_tell_the_user_to_type_an_angle_bracket_placeholder():
+    for name in ("run_dev.ps1", "setup.ps1"):
+        text = (doctor.ROOT / "scripts" / name).read_text(encoding="utf-8")
+        assert "taskkill /PID <PID>" not in text
+        assert "/PID <" not in text
+    start_here = (doctor.ROOT / "START_HERE.md").read_text(encoding="utf-8")
+    assert "run_dev.ps1 -FreePort" in start_here
+    assert "$ownerPid" in start_here
+    assert "operator is reserved" in start_here
+
+
 def test_windows_start_script_checks_the_port_before_starting():
     text = (doctor.ROOT / "scripts" / "run_dev.ps1").read_text(encoding="utf-8")
     assert "doctor.py --only port" in text
     assert "-Port 8010" in text
     assert "Nothing was started" in text
+    assert "-FreePort" in text and "--stop-owner" in text
 
 
 def test_doctor_never_needs_third_party_packages():
