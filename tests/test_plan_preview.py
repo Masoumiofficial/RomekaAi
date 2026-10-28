@@ -30,6 +30,7 @@ def test_preview_is_read_only_and_confirm_preserves_existing_plan(auth_client, d
     draft = preview(c, csrf)
     assert draft['token'] and draft['active_plan_id'] == old_id
     assert draft['plan']['plan_id'] is None and draft['plan']['validation']['valid']
+    assert draft['inputs'] == {"open_tasks": 1, "fixed_events": 0, "profile_completed": False}
     assert db.query(Plan).filter_by(user_id=uid).count() == count
     assert (task.status, task.planned_for) == (previous_status, previous_date)
     assert db.get(Plan, old_id).is_active
@@ -159,3 +160,21 @@ def test_changed_fixed_event_rejects_preview(auth_client, db):
     assert r.status_code == 200
     assert c.post('/api/v1/planner/preview/confirm', headers=H(csrf), json={'token':draft['token']}).status_code == 409
     assert db.query(Plan).filter_by(user_id=uid).count() == 0
+
+
+def test_preview_input_summary_is_owner_scoped_and_distinguishes_profile(auth_client, db):
+    from datetime import date
+    from app.db.models import FixedEvent, User
+    c, csrf, _ = auth_client
+    other = User(email='other-inputs@example.com', password_hash='unused')
+    db.add(other); db.flush()
+    db.add(Task(user_id=other.id, title='کار کاربر دیگر', duration_min=30))
+    db.add(FixedEvent(user_id=other.id, title='جلسه کاربر دیگر', date=date.fromisoformat(DAY),
+                      start_min=600, end_min=660))
+    db.flush()
+    assert preview(c, csrf)['inputs'] == {'open_tasks':0, 'fixed_events':0, 'profile_completed':False}
+    add_task(c, csrf, 'وظیفه من')
+    assert c.post(f'/api/v1/planner/events?day={DAY}', headers=H(csrf),
+                  json={'title':'جلسه من', 'start_min':600, 'end_min':660}).status_code == 200
+    assert c.put('/api/v1/profile', headers=H(csrf), json={'wake_time':420}).status_code == 200
+    assert preview(c, csrf)['inputs'] == {'open_tasks':1, 'fixed_events':1, 'profile_completed':True}

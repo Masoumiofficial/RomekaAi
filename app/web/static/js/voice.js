@@ -28,6 +28,7 @@
     busy = value; $('voice-send').disabled = value; $('voice-action-apply').disabled = value;
     $('voice-mic').disabled = value || !!recognition; $('voice-new').disabled = value; $('voice-action-cancel').disabled = value;
     $('voice-plan-apply').disabled = value; $('voice-plan-cancel').disabled = value;
+    $('voice-today').disabled = value; $('voice-preview').disabled = value;
   };
   const stopSpeaking = () => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); };
   function readReply() {
@@ -100,21 +101,46 @@
     'برنامه ریز':'/planner', 'برنامه ریزی':'/planner', 'متخصص ها':'/agents', 'متخصصان':'/agents',
     'پروژه ها':'/business', 'پروژه':'/business', 'سلامت':'/health', 'حافظه':'/memory', 'تنظیمات':'/settings'};
   const normalize = text => text.replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/‌/g,' ').replace(/\s+/g,' ').trim();
+  // Recognize only a constrained vocabulary; extra dates or constraints are
+  // not silently discarded or turned into executable model output.
+  function classifyPlan(text) {
+    const clean = text.replace(/[ًٌٍَُِّْـ]/g,'').replace(/[،,؛;؟?!.:：]/g,' ')
+      .replace(/\s+/g,' ').trim();
+    const words = clean.split(' ');
+    const planWords = new Set(['برنامه','برنامهام','برنامم','برنامه‌ام','برناممو','برنامهامو']);
+    const hasPlan = words.some(word => planWords.has(word));
+    const hasToday = words.some(word => ['امروز','امروزم','امروزمو'].includes(word));
+    if (!hasPlan) return null;
+    const vocabulary = new Set(['سلام','رومکا','عزیز','لطفا','لطفاً','خواهش','میکنم','می','کنم','میشه','شه','میتونی','تونی','میتونه',
+      'ممنون','بهم','برام','واسه','برای','یه','یک','من','منو','م','ام','مو','ای','امروز','امروزم','امروزمو','برنامه','برنامهام',
+      'برنامم','برناممو','برنامهامو','ریزی','چه','چی','چیه','چیست','چطور','دارم','رو','را','امروزمان',
+      'نشون','نشان','نمایش','بده','بگو','بگی','ببینم','میخوام','میخوامش','ببین','ببینم','ببینمش','بخون','بخونی',
+      'بساز','بسازی','بچین','بچینی','بذار','بزار','بسازش','تنظیم','تهیه','آماده','کن','کنید','کنی','کنه','بکن','بدهی','پیش','پیشنمایش']);
+    const safeVocabulary = words.every(word => vocabulary.has(word));
+    if (hasToday && safeVocabulary) {
+      if (words.some(word => ['بساز','بسازی','بسازش','بچین','بچینی','بذار','بزار','تنظیم','تهیه','آماده','پیش','پیشنمایش','ریزی'].includes(word))) return 'plan-preview';
+      return 'today';
+    }
+    // Ambiguous planner requests stay local and require an explicit choice.
+    if (hasToday || words.some(word => ['فردا','دیروز','هفته','بساز','بسازی','بچین','بچینی','بذار','بزار','تنظیم','تهیه','نشون','نشان','نمایش','بگو','بگی','بده','دارم'].includes(word))) return 'plan-help';
+    return null;
+  }
   function parse(text) {
     const normalized = normalize(text).replace(/[.!؟?]+$/,'').trim();
     const nav = normalized.match(/^(?:برو به|باز کن|صفحه)\s+(?:بخش\s+)?(.+?)(?:\s+(?:را|رو))?$/);
     if (nav && Object.hasOwn(destinations, nav[1])) return {type:'navigate', path:destinations[nav[1]]};
     if (/^(?:وظایف من|کارهای من|لیست وظایف|فهرست وظایف)$/.test(normalized)) return {type:'tasks'};
-    if (/^(?:برنامه امروز|برنامه امروز من|برنامه امروز را نشان بده|برنامه امروز رو نشون بده|نمایش برنامه امروز)$/.test(normalized)) return {type:'today'};
-    if (/^(?:پیش نمایش برنامه امروز|برنامه امروز را بساز|برنامه امروز رو بساز|برای امروز برنامه بساز)$/.test(normalized)) return {type:'plan-preview'};
+    // Explicit task/project creation wins even if the title mentions a plan.
     // Preserve the original title; normalized text is only for matching commands.
     const action = text.trim().match(/^(?:ثبت|ایجاد|افزودن)(?:\s+(?:یک|یه))?\s+(وظیفه|پروژه)(?:\s*[:：]\s*|\s+)?([\s\S]*)$/);
     if (action) return {type:action[1] === 'وظیفه' ? 'task' : 'project', name:action[2].trim()};
+    const planCommand = classifyPlan(normalized);
+    if (planCommand) return {type:planCommand};
     return {type:'chat'};
   }
   function formatPlan(plan, iso, preview) {
     const date = window.RomkaDate?.display(iso) || iso || '—';
-    if (!plan) return `برای تاریخ ${date} برنامهٔ فعالی ثبت نشده است.`;
+    if (!plan) return `برای تاریخ ${date} برنامهٔ فعالی ثبت نشده است. برای محاسبه از دکمهٔ پیش‌نمایش استفاده کنید.`;
     const lines = [preview ? `پیش‌نمایش ذخیره‌نشده برای ${date}` : `برنامهٔ فعال ${date}`,
       plan.validation?.valid ? 'اعتبار محاسبه: معتبر' : 'هشدار: برنامه معتبر نیست و قابل فعال‌سازی از این پنل نیست.'];
     const blocks = Array.isArray(plan.blocks) ? plan.blocks : [];
@@ -127,13 +153,20 @@
     if (plan.calibration?.note) lines.push(`کالیبراسیون: ${plan.calibration.note}`);
     return lines.join('\n');
   }
-  $('voice-send').addEventListener('click', async () => {
+  async function submitText(text, preserveDraft=false) {
     if (busy) return;
     if (recognition) { status('ابتدا ضبط را متوقف کنید و متن را بررسی کنید.'); return; }
-    const text = $('voice-text').value.trim(); if (!text) { status('متن پیام خالی است.'); return; }
+    if (!text) { status('متن پیام خالی است.'); return; }
+    if (preserveDraft && (pending || pendingPlan)) { status('ابتدا پیش‌نمایش قبلی را تأیید یا لغو کنید.'); return; }
     pending = null; pendingPlan = null; $('voice-confirm').hidden = true; $('voice-plan-confirm').hidden = true;
     const command = parse(text);
     if (command.type === 'navigate') { window.location.assign(command.path); return; }
+    if (command.type === 'plan-help') {
+      reply('منظور از درخواست برنامه مشخص نیست یا شامل جزئیات دیگری است. هیچ تغییری انجام نشده است. برای نمایش یا پیش‌نمایش امروز از دکمه‌های بالا استفاده کنید؛ برای تاریخ یا محدودیت دیگر به برنامه‌ریز بروید.');
+      status('درخواست به مدل فرستاده نشد؛ متن شما حفظ شده است.');
+      if ($('voice-auto-speak').checked && !$('voice-panel').hidden) readReply();
+      return;
+    }
     if (command.type === 'task' || command.type === 'project') {
       if (!command.name) { status('عنوان را بعد از دستور بگویید یا بنویسید.'); return; }
       pending = command.type;
@@ -159,7 +192,14 @@
         finalStatus = 'برنامهٔ فعال دریافت شد؛ چیزی تغییر نکرد.';
       } else if (command.type === 'plan-preview') {
         const data = await api('/planner/preview', {energy_mode:'normal'});
-        reply(formatPlan(data.plan, data.plan?.date, true));
+        let explanation = 'منبع برنامه‌ریز: وظایف، تعهدات و پروفایل ثبت‌شده؛ متن گفتگو یا حافظه به‌طور خودکار وظیفه نمی‌شود.';
+        if (data.inputs) {
+          explanation += `\nوظایف باز: ${data.inputs.open_tasks}؛ تعهدات ثابت این روز: ${data.inputs.fixed_events}.`;
+          if (!data.inputs.profile_completed) explanation += '\nپروفایل اولیه تکمیل نشده است.';
+          if (!data.inputs.open_tasks && !data.inputs.fixed_events) explanation += '\nبرای این محاسبه وظیفه یا تعهد ثابتی ثبت نشده است.';
+        }
+        explanation += '\nبرخی زمان‌ها یا ظرفیت‌ها ممکن است پیش‌فرض باشند؛ آنها را در پروفایل بررسی کنید.';
+        reply(explanation + '\n\n' + formatPlan(data.plan, data.plan?.date, true));
         pendingPlan = data.token || null;
         $('voice-plan-confirm').hidden = !pendingPlan;
         finalStatus = pendingPlan ? 'پیش‌نمایش آماده است؛ هنوز چیزی ثبت نشده است.' : 'این پیش‌نمایش معتبر نیست؛ تعارض‌ها را در پاسخ بررسی کنید.';
@@ -170,12 +210,15 @@
         const cost = Number(data.provider?.cost_usd);
         finalStatus = 'پاسخ آماده است.' + (Number.isFinite(cost) ? ` هزینهٔ گزارش‌شده: ${cost} دلار.` : '');
       }
-      if ($('voice-text').value.trim() === text) $('voice-text').value = '';
+      if (!preserveDraft && $('voice-text').value.trim() === text) $('voice-text').value = '';
       status(finalStatus);
       if (lastReply && $('voice-auto-speak').checked && !$('voice-panel').hidden) readReply();
     } catch (e) { status(e.message); }
     finally { setBusy(false); }
-  });
+  }
+  $('voice-send').addEventListener('click', () => submitText($('voice-text').value.trim()));
+  $('voice-today').addEventListener('click', () => submitText('برنامه امروز', true));
+  $('voice-preview').addEventListener('click', () => submitText('پیش نمایش برنامه امروز', true));
   $('voice-plan-apply').addEventListener('click', async () => {
     if (busy || !pendingPlan) return;
     const token = pendingPlan; setBusy(true); status('در حال فعال‌سازی برنامه…');

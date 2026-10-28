@@ -258,8 +258,14 @@ def preview_plan(p: GenerateIn, ctx: AuthContext = Depends(get_auth_context),
             "calibration": p.apply_calibration, "active_id": active_id,
             "digest": _preview_digest(plan),
         })
+    # Explain which stored planner inputs were used, not a claim about memory.
+    task_count = db.query(Task).filter(Task.user_id == ctx.user.id, Task.status != "done").count()
+    event_count = db.query(FixedEvent).filter(FixedEvent.user_id == ctx.user.id, FixedEvent.date == day).count()
+    profile = db.query(UserProfile).filter(UserProfile.user_id == ctx.user.id).first()
+    inputs = {"open_tasks": task_count, "fixed_events": event_count,
+              "profile_completed": bool(profile and profile.onboarding_completed)}
     return {"ok": True, "plan": plan, "active_plan_id": active_id, "token": token,
-            "expires_in_seconds": PREVIEW_MAX_AGE}
+            "inputs": inputs, "expires_in_seconds": PREVIEW_MAX_AGE}
 
 
 @router.post("/preview/confirm")

@@ -31,7 +31,7 @@
     <div class="card flat" style="padding:12px">
       <div class="chip-mini"><span>موتور هوش مصنوعی</span><span id="sb-provider" class="faint">…</span></div>
       <div class="chip-mini" style="margin-top:6px"><span>برنامه</span><span id="sb-plan" class="faint">…</span></div>
-      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.16</span></div>
+      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.17</span></div>
     </div>
     <div class="sidebar-foot">
       <div class="small faint" style="margin-bottom:8px">{{ user.display_name or user.email }}</div>
@@ -68,6 +68,10 @@
     <div class="row"><button type="button" class="btn sm primary" id="voice-send">ارسال متن</button>
       <button type="button" class="btn sm ghost" id="voice-read" disabled>خواندن پاسخ</button>
       <button type="button" class="btn sm ghost" id="voice-silence">قطع صدا</button></div>
+    <div class="row" style="margin-top:10px" aria-label="دسترسی سریع به برنامه‌ریز">
+      <button type="button" class="btn sm" id="voice-today">نمایش برنامه امروز</button>
+      <button type="button" class="btn sm" id="voice-preview">پیش‌نمایش برنامه امروز</button>
+    </div>
     <div id="voice-reply" class="voice-reply" aria-live="polite"></div>
     <div id="voice-confirm" class="voice-confirm" hidden>
       <h3 id="voice-action-title"></h3>
@@ -90,7 +94,7 @@
 </div>
 <script src="/static/js/persian-date.js"></script>
 <script src="/static/js/romka.js"></script>
-<script src="/static/js/voice.js"></script>
+<script src="/static/js/voice.js?v=0.2.17"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
