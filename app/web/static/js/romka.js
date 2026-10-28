@@ -308,12 +308,43 @@
         setHTML("task-count", r.count);
         setHTML("task-list", r.items.length?r.items.map(t=>`<div class="list-item ${t.status==="done"?"done":""}">
           <span class="tag ${t.priority<=2?"accent":""}">P${t.priority}</span><span class="grow">${esc(t.title)}</span>
-          <span class="faint xs">${t.duration_min}′</span>
+          <span class="faint xs">تخمین ${t.duration_min}′${t.actual_min?` · واقعی ${t.actual_min}′`:""}</span>
+          <input type="number" min="1" max="1440" placeholder="واقعی" data-act="${t.id}" class="mini" aria-label="مدت واقعی به دقیقه" style="width:74px">
           <button class="btn sm ghost" data-done="${t.id}" title="انجام شد">✓</button>
           <button class="btn sm ghost danger" data-del="${t.id}" title="حذف">×</button></div>`).join(""):`<div class="empty">وظیفهای ثبت نشده.</div>`);
-        document.querySelectorAll("[data-done]").forEach(b=>b.addEventListener("click",async()=>{try{await api(`/planner/tasks/${b.dataset.done}/complete`,{body:{}});toast("انجام شد.");loadTasks();}catch(e){toast(e.message,true);}}));
+        document.querySelectorAll("[data-done]").forEach(b=>b.addEventListener("click",async()=>{
+          const box=document.querySelector(`[data-act="${b.dataset.done}"]`);
+          const actual=box && box.value ? +box.value : null;
+          try{
+            const r=await api(`/planner/tasks/${b.dataset.done}/complete`,{body: actual?{actual_minutes:actual}:{}});
+            const c=r.calibration||{};
+            toast(actual?`انجام شد؛ ${actual} دقیقه واقعی ثبت شد (${c.samples||0} نمونه برای کالیبراسیون).`:"انجام شد.");
+            renderCalibration(c); loadTasks(); loadWeek();
+          }catch(e){toast(e.message,true);}
+        }));
         document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",async()=>{try{await api(`/planner/tasks/${b.dataset.del}`,{method:"DELETE"});loadTasks();}catch(e){toast(e.message,true);}}));
       } catch(e){ toast(e.message,true); }
+    };
+    const renderCalibration = (c) => {
+      if(!c) return;
+      const badge=$("calib-badge"); if(!badge) return;
+      badge.className="tag "+(c.applied?(c.confidence==="high"?"ok":"warn"):"");
+      badge.textContent = c.applied ? `کالیبراسیون فعال ×${c.ratio} (${c.samples} نمونه)`
+                                    : `کالیبراسیون غیرفعال (${c.samples}/${c.min_samples} نمونه)`;
+      setHTML("calib-note", c.note||"");
+    };
+    const loadWeek = async () => {
+      try{
+        const w=await api("/planner/week");
+        const t=w.totals||{};
+        const rows=w.days.filter(d=>d.tasks||d.fixed_min);
+        setHTML("week-box", (rows.length?rows.map(d=>`<div class="list-item"><span class="tag">${esc(d.date.slice(5))}</span>
+          <span class="grow">${d.tasks} کار · ${d.planned_min}′ برنامه · ${d.fixed_min}′ ثابت</span>
+          <span class="faint xs">${d.done}/${d.tasks} انجام</span></div>`).join("")
+          : `<div class="empty">در ۷ روز گذشته هیچ وظیفه/رویدادی ثبت نشده است.</div>`)
+          + `<div class="xs faint" style="margin-top:6px">جمع: ${t.tasks||0} کار · ${t.planned_min||0}′ برنامه‌ریزی · ${t.fixed_min||0}′ ثابت${t.completion_pct!=null?` · تکمیل ${t.completion_pct}%`:""} — ${esc(w.note)}</div>`);
+        renderCalibration(w.calibration);
+      }catch(e){ setHTML("week-box", errBox(e)); }
     };
     const loadEvents = async () => {
       try { const r = await api("/planner/events?day="+$("plan-date").value);
@@ -324,7 +355,25 @@
     const refreshPlan = async () => {
       try { const r = await api("/planner/today?day="+$("plan-date").value); renderPlan(r.plan); } catch(e){ toast(e.message,true); }
     };
+    $("review-btn")?.addEventListener("click",async()=>{
+      try{
+        const r=await api("/planner/review?day="+$("plan-date").value+"&mode=night");
+        const c=r.counts||{}, tm=r.time||{};
+        setHTML("review-box", `<div class="notice ok">${esc(r.summary)}</div>
+          <div class="row" style="gap:6px;margin:8px 0"><span class="tag">${c.done}/${c.tasks} انجام</span>
+          <span class="tag">${c.events} تعهد ثابت</span>
+          <span class="tag ${tm.delta_min>0?"warn":""}">تخمین ${tm.estimated_min}′ / واقعی ${tm.actual_min}′</span>
+          ${r.adherence_pct!=null?`<span class="tag">پایبندی ${r.adherence_pct}%</span>`:""}</div>
+          ${(r.overruns||[]).map(o=>`<div class="small">• «${esc(o.title)}» ${o.estimated_min}′ تخمین → ${o.actual_min}′ واقعی</div>`).join("")}
+          ${(r.warnings||[]).map(w=>notice(w)).join("")}
+          <div class="strong" style="margin-top:8px">${r.next_actions?.length?"قدم‌های بعدی:":"کاری برای فردا ثبت نشده."}</div>
+          ${(r.next_actions||[]).map(a=>`<div class="small">• ${esc(a.title)} (${a.duration_min}′، ${esc(a.reason)})</div>`).join("")}
+          <div class="xs faint" style="margin-top:8px">${esc(r.note)}</div>`);
+        renderCalibration(r.calibration);
+      }catch(e){ setHTML("review-box", errBox(e)); }
+    });
     $("example-btn")?.addEventListener("click",()=>{ $("intake-text").value="امروز باید روی انتشار گپینه کار کنم، نویدبان را بررسی کنم، یک جلسه کاری دارم، خرید کنم و ساعت شش باشگاه بروم."; });
+    loadWeek();
     $("intake-btn")?.addEventListener("click",async()=>{
       const t=$("intake-text").value.trim(); if(!t)return toast("متن وارد کنید.",true);
       try { const r=await api("/planner/intake",{body:{text:t,date:$("plan-date").value,save:$("intake-save").checked}});
