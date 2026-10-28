@@ -13,7 +13,7 @@
 | 5 — Fitness & Nutrition | 🟡 Implemented + Tested (پایه) | ارزیابی، تمرین، غذا، ثبت نتایج، پیشرفت ایمن | نمودار روند، تصاویر پیشرفت، periodization پیشرفته |
 | 6 — Projects & Business | 🟡 Implemented + Tested (پایه) | پروژهها، اهداف، تصمیمها، شاخص پیشرفت | مرور هفتگی خودکار، KPI و قیف فروش |
 | 7 — Messaging | 🟡 Implemented, live Verified ❌ | آداپتور تلگرام/بله، وبحوک، allowlist، ثبت رخداد، دستورات | توکن واقعی + تست زنده + دکمهها + اعلانها |
-| 8 — Premium Experience | 🟡 Implemented + Tested (مسیرها) | طراحی مستقل RTL، دارک/لایت، آناتومی SVG، ۹ صفحه، واکنشگرا | تست تجربه کاربری با کاربران، انیمیشن هدفمند، PWA |
+| 8 — Premium Experience | 🟡 Implemented + Tested (مسیرها) | طراحی RTL، دارک/لایت، آناتومی SVG، دستیار صوتی اختیاری با اقدامات محدود | آزمون میکروفون، صدای فارسی و مرورگر کاربر، توسعه امن ابزارها، PWA |
 | 9 — Production Readiness | 🔴 In Progress | فایلهای systemd/nginx/بکآپ/CI، health check، مستندات | تست بار، ممیزی امنیتی خارجی، restore واقعی، پایش منابع |
 | 10 — Evolution | 🔵 Planned | بازخورد اختیاری قابل حذف برای پاسخ‌ها (آزمون API)؛ [ADR 0009](DECISIONS/0009-controlled-evolution.md) | مقایسهٔ نسخه‌ها و خط مبنای کیفیت، دانش منبع‌دار با تأیید، پایش دوره‌ای اختیاری، آزمون مدل محلی؛ آموزش وزن‌ها مسدود به منابع و دادهٔ مجاز |
 | 21 — Skill Intelligence | ✅ Tested | رجیستری، امتیازدهی، وتوی مجوز/دسترسی، SBOM، بازگشت | کشف خودکار دورهای (GitHub API)، اسکن آسیبپذیری وابستگیها |

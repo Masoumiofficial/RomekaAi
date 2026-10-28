@@ -19,7 +19,7 @@ from app.skills.registry import skill_registry
 
 router = APIRouter(tags=["system"])
 
-VERSION = "0.2.14"
+VERSION = "0.2.15"
 
 
 def _demo_status(settings: Settings, request: Request) -> dict:

@@ -9,10 +9,10 @@
 
 | فایل | نسخه | برای چه کسی |
 |---|---|---|
-| `romka-v0.2.14.zip` | 0.2.14 — **کامل** | نسخهٔ پیش‌فرض؛ همهٔ ابزارها از جمله `doctor.py` |
-| `romka-v0.2.14-core.zip` | 0.2.14 — **Core** | اگر آنتی‌ویروس/Defender هشدار داد |
+| `romka-v0.2.15.zip` | 0.2.15 — **کامل** | نسخهٔ پیش‌فرض؛ همهٔ ابزارها از جمله `doctor.py` |
+| `romka-v0.2.15-core.zip` | 0.2.15 — **Core** | اگر آنتی‌ویروس/Defender هشدار داد |
 | [`CHECKSUMS.txt`](CHECKSUMS.txt) | — | هش هر دو آرشیو، **بدون نیاز به دانلود** (در مرورگر باز کنید) |
-| `romka-v0.2.14.zip.sha256` · `romka-v0.2.14-core.zip.sha256` | — | همان عدد، کنار هر فایل (اختیاری) |
+| `romka-v0.2.15.zip.sha256` · `romka-v0.2.15-core.zip.sha256` | — | همان عدد، کنار هر فایل (اختیاری) |
 
 تفاوت دو نسخه فقط سه فایل و یک پوشه است: `scripts/doctor.py` (فهرست پروسه‌ها،
 بستن پروسهٔ اشغال‌کنندهٔ پورت)، `scripts/verify_provider.py` (خواندن کلید API از
@@ -35,7 +35,7 @@
 ```bash
 python scripts/build_release.py --sha256-file                      # کامل
 python scripts/build_release.py --profile core --sha256-file       # Core
-sha256sum release/romka-v0.2.14.zip        # ویندوز: Get-FileHash -Algorithm SHA256
+sha256sum release/romka-v0.2.15.zip        # ویندوز: Get-FileHash -Algorithm SHA256
 ```
 
 اگر عدد خروجی با فایل `.sha256` یکی بود، فایل بایتی همان چیزی است که تست شد.
@@ -43,12 +43,12 @@ sha256sum release/romka-v0.2.14.zip        # ویندوز: Get-FileHash -Algorit
 ## نصب پس از دانلود
 
 ```bash
-unzip romka-v0.2.14.zip && cd romka
+unzip romka-v0.2.15.zip && cd romka
 ./scripts/setup.sh && ./scripts/run_dev.sh
 ```
 
 ```powershell
-Expand-Archive .\romka-v0.2.14.zip -DestinationPath C:\ ; cd C:\romka
+Expand-Archive .\romka-v0.2.15.zip -DestinationPath C:\ ; cd C:\romka
 .\scripts\setup.ps1 ; .\scripts\run_dev.ps1
 ```
 

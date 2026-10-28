@@ -23,6 +23,7 @@ class SendIn(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
     conversation_id: int | None = Field(default=None, gt=0)
     include_history: bool = False  # explicit consent, off by default
+    allow_remember: bool = True  # voice widget opts out of implicit writes
 
 
 @router.get("/conversations")
@@ -111,7 +112,8 @@ def delete_feedback(message_id: int, ctx: AuthContext = Depends(get_auth_context
 def send(p: SendIn, ctx: AuthContext = Depends(get_auth_context),
          db: Session = Depends(get_db), settings: Settings = Depends(get_settings)) -> dict:
     core = CoreOrchestrator(db, user_id=ctx.user.id, settings=settings)
-    return core.handle(p.text, conversation_id=p.conversation_id, include_history=p.include_history)
+    return core.handle(p.text, conversation_id=p.conversation_id, include_history=p.include_history,
+                       allow_remember=p.allow_remember)
 
 
 @router.post("/stream")

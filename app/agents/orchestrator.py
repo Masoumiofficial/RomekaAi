@@ -130,7 +130,8 @@ class CoreOrchestrator:
         return out
 
     def handle(self, text: str, *, conversation_id: int | None = None,
-               stream: bool = False, include_history: bool = False) -> dict:
+               stream: bool = False, include_history: bool = False,
+               allow_remember: bool = True) -> dict:
         started = time.perf_counter()
         text = (text or "").strip()
         if not text:
@@ -143,7 +144,7 @@ class CoreOrchestrator:
         self.db.add(Message(conversation_id=conv.id, role="user", content=text))
         self.db.flush()
 
-        remembered = self._remember(text)
+        remembered = self._remember(text) if allow_remember else None
         agents = registry.select(text)
         primary = agents[0]
         secondary = agents[1] if len(agents) > 1 else None
