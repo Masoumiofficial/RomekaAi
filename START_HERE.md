@@ -1,4 +1,4 @@
-# START HERE — ROMKA v0.2.3
+# START HERE — ROMKA v0.2.4
 
 این بسته، نسخهٔ کامل و قابل اجرای ROMKA روی سیستم خودتان است. هیچ کلید API و هیچ
 توکنی داخل بسته نیست؛ همهٔ فایل‌های حساس (`romka.db`، `.env`، `.romka_dev_secret`)
@@ -12,7 +12,7 @@
 (در نصب، تیک `Add python.exe to PATH` را بزنید).
 
 1. آرشیو را در درایو `C:\` خارج کنید؛ خودِ zip یک پوشهٔ `romka` می‌سازد
-   (`Expand-Archive romka-v0.2.3.zip -DestinationPath C:\`) — مسیر با فاصله و حروف
+   (`Expand-Archive romka-v0.2.4.zip -DestinationPath C:\`) — مسیر با فاصله و حروف
    فارسی نباشد.
 2. در PowerShell داخل همان پوشه اجرا کنید:
 
@@ -53,12 +53,12 @@ unzip romka-v0.2.0.zip -d romka && cd romka
 ## آیا درست کار می‌کند؟
 
 ```bash
-# عیب‌یابی:  .venv\Scripts\python.exe scripts\doctor.py
+# عیب‌یابی:  .venv\Scripts\python.exe scripts\doctor.py   (فقط در نسخهٔ کامل؛ Core این فایل را ندارد)
 # ویندوز:  .\scripts\run_tests.ps1
 # لینوکس:  ./scripts/setup.sh --test-only   یا:  . .venv/bin/activate && pytest -q
 ```
 
-انتظار: **۱۴۶ تست عبور می‌کند** (بدون هیچ سرویس خارجی و بدون کلید API).
+انتظار: **۱۵۰ تست عبور می‌کند** (بدون هیچ سرویس خارجی و بدون کلید API).
 
 سالم‌بودن سرور: <http://127.0.0.1:8000/api/v1/health> باید `{"ok": true}` بدهد.
 
@@ -131,12 +131,39 @@ export GAPGPT_API_KEY="کلید-شما"
 
 ---
 
+## اگر ویندوز/آنتی‌ویروس هشدار «ویروس» داد
+
+بسته **هیچ فایل اجرایی (`.exe`/`.dll`) ندارد**؛ ۱۳۰ فایل متنی پایتون است. هشدار معمولاً
+یکی از این سه است: (۱) پیام SmartScreen برای فایل بدون امضای دیجیتال، (۲) هیوریستیک روی
+دو ابزار کمکی در نسخهٔ کامل (`doctor.py` که پروسهٔ مزاحم را می‌بندد و
+`verify_provider.py` که کلید API می‌خواند)، (۳) سیاست PowerShell برای اجرای اسکریپت.
+
+**راه‌حل‌ها به‌ترتیب اولویت:**
+
+1. **هش را بررسی کنید** (فایل `.sha256` کنار آرشیو):
+   ```powershell
+   Get-FileHash .\romka-v0.2.4.zip -Algorithm SHA256
+   Get-Content .\romka-v0.2.4.zip.sha256
+   ```
+2. **نسخهٔ Core را بگیرید** — بدون `doctor.py`، بدون `verify_provider.py`، بدون `deploy/`:
+   `downloads/romka-v0.2.4-core.zip` (همهٔ قابلیت‌های اصلی را دارد؛ فقط پورت را خودش
+   آزاد نمی‌کند و اگر اشغال باشد با پیام روشن متوقف می‌شود).
+3. **بهترین راه:** خودتان از منبع بسازید — `git clone` و بعد
+   `python scripts/build_release.py --version 0.2.4 --sha256-file`؛ هش باید یکی باشد.
+4. برچسب اینترنت را بعد از تأیید هش بردارید: `Unblock-File .\romka-v0.2.4.zip`
+5. گزارش مثبت کاذب: <https://www.microsoft.com/en-us/wdsi/filesubmission>
+
+جزئیات کامل و روش گزارش به هر سازنده: [`docs/ANTIVIRUS.md`](docs/ANTIVIRUS.md)
+
+> ⚠️ آنتی‌ویروس را خاموش نکنید. اگر ناچار شدید، فقط پوشهٔ پروژه را استثنا کنید و آن هم
+> بعد از تأیید هش و خواندن کد.
+
 ## عیب‌یابی سریع (ابزار داخلی)
 
 اگر صفحهٔ مرورگر آن‌چیزی نبود که باید باشد، اول این را اجرا کنید:
 
 ```powershell
-.venv\Scripts\python.exe scripts\doctor.py      # ویندوز
+.venv\Scripts\python.exe scripts\doctor.py      # ویندوز — فقط نسخهٔ کامل
 ```
 ```bash
 .venv/bin/python scripts/doctor.py                 # لینوکس/مک
@@ -207,4 +234,4 @@ curl.exe -i http://127.0.0.1:8000/api/v1/health
 | `no such table` | `alembic upgrade head` را اجرا کنید (اسکریپت setup خودش انجام می‌دهد) |
 | ورود دمو ناموفق | مطمئن شوید `ROMKA_AUTO_DEMO=true` و `ENVIRONMENT=development` است |
 
-نسخه: `0.2.3` · همهٔ ۱۴۶ تست در زمان ساخت این بسته روی محتوای همین zip اجرا شد.
+نسخه: `0.2.4` · همهٔ ۱۵۰ تست در زمان ساخت این بسته روی محتوای همین zip اجرا شد.

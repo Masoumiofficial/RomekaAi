@@ -15,8 +15,15 @@ Write-Host "http://127.0.0.1:$Port/auth  (demo: demo@romka.local / RomkaDemo2026
 
 # Never start silently on a port that another program already owns: that is how
 # a browser ends up showing a 404 from `python -m http.server` instead of ROMKA.
-if (-not $SkipChecks) {
-    & $py scripts\doctor.py --only port --port $Port --quiet
+$doctor = "scripts\doctor.py"
+$hasDoctor = Test-Path $doctor
+if (-not $SkipChecks -and -not $hasDoctor) {
+    Write-Host "core build: port pre-flight is not included; starting directly." -ForegroundColor DarkGray
+    Write-Host "If the port is busy, close the other program or run: .\scripts\run_dev.ps1 -Port 8010" -ForegroundColor DarkGray
+}
+
+if (-not $SkipChecks -and $hasDoctor) {
+    & $py $doctor --only port --port $Port --quiet
     $code = $LASTEXITCODE
 
     if ($code -eq 15) {
@@ -43,7 +50,7 @@ if (-not $SkipChecks) {
             exit 1
         }
         # -FreePort: the doctor finds the PID, refuses unsafe targets, and asks first.
-        $args = @("scripts\doctor.py", "--only", "port", "--port", "$Port", "--stop-owner")
+        $args = @($doctor, "--only", "port", "--port", "$Port", "--stop-owner")
         if ($Yes) { $args += "--yes" }
         & $py @args
         if ($LASTEXITCODE -ne 0) {
@@ -51,7 +58,7 @@ if (-not $SkipChecks) {
             Write-Host "Try another port:  .\scripts\run_dev.ps1 -Port 8010" -ForegroundColor Yellow
             exit 1
         }
-        & $py scripts\doctor.py --only port --port $Port --quiet
+        & $py $doctor --only port --port $Port --quiet
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Port $Port is still not usable. Nothing was started." -ForegroundColor Red
             exit 1
@@ -60,6 +67,7 @@ if (-not $SkipChecks) {
         Write-Host ""
         Write-Host "Pre-flight check failed (exit $code). Nothing was started." -ForegroundColor Red
         Write-Host "Full diagnosis:  .\.venv\Scripts\python.exe scripts\doctor.py" -ForegroundColor Yellow
+        Write-Host "(the 'core' download has no doctor; close the other program instead)" -ForegroundColor DarkGray
         exit 1
     }
 

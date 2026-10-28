@@ -12,7 +12,15 @@ ASSUME_YES="${YES:-0}"          # YES=1 skips the confirmation prompt
 echo "== ROMKA =="
 echo "http://127.0.0.1:${PORT}/auth  (demo: demo@romka.local / RomkaDemo2026!)"
 
-if [ "$SKIP_CHECKS" != "1" ]; then
+HAVE_DOCTOR=0
+[ -f scripts/doctor.py ] && HAVE_DOCTOR=1
+
+if [ "$SKIP_CHECKS" != "1" ] && [ "$HAVE_DOCTOR" = "0" ]; then
+  echo "core build: port pre-flight is not included; starting directly."
+  echo "if the port is busy, close the other program or choose another: PORT=8010 ./scripts/run_dev.sh"
+fi
+
+if [ "$SKIP_CHECKS" != "1" ] && [ "$HAVE_DOCTOR" = "1" ]; then
   set +e
   "$PY" scripts/doctor.py --only port --port "$PORT"
   code=$?

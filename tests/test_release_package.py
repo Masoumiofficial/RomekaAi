@@ -23,10 +23,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import build_release  # noqa: E402
 
 
+def _tree_profile() -> str:
+    """Which profile this *tree* can produce.
+
+    A "core" download has no ``scripts/doctor.py`` (removed on purpose, see
+    ``PROFILE_EXCLUDES``). Detecting it keeps the suite green when a user runs
+    ``pytest`` inside the core archive instead of the full one.
+    """
+    return "core" if not (build_release.ROOT / "scripts" / "doctor.py").exists() else "full"
+
+
+TREE_PROFILE = _tree_profile()
+
+
 @pytest.fixture(scope="module")
 def archive(tmp_path_factory) -> Path:
     out = tmp_path_factory.mktemp("release") / "romka-test.zip"
-    return build_release.build(out)
+    return build_release.build(out, profile=TREE_PROFILE)
+
+
+@pytest.fixture(scope="module")
+def core_archive(tmp_path_factory) -> Path:
+    out = tmp_path_factory.mktemp("release-core") / "romka-core.zip"
+    return build_release.build(out, profile="core")
 
 
 PREFIX = build_release.DEFAULT_PREFIX
@@ -58,10 +77,19 @@ def test_archive_is_a_valid_non_empty_zip(archive):
     "migrations/env.py", "scripts/setup.sh", "scripts/setup.ps1",
     "scripts/run_dev.ps1", "scripts/run_dev.sh", "scripts/verify_provider.py", "scripts/doctor.py",
     "scripts/build_release.py", "tests/conftest.py", "docs/STATUS.md",
-    "docs/AI-PROVIDERS.md", "docs/DEPLOYMENT.md", "deploy/nginx/romka.conf",
+    "docs/AI-PROVIDERS.md", "docs/DEPLOYMENT.md", "docs/ANTIVIRUS.md",
+    "deploy/nginx/romka.conf",
 ])
 def test_archive_contains_what_a_fresh_install_needs(archive, required):
-    assert required in _names(archive), f"{required} missing from the release archive"
+    names = _names(archive)
+    if required not in names and _excluded_by(TREE_PROFILE, required):
+        pytest.skip(f"{required} is intentionally absent from the {TREE_PROFILE} profile")
+    assert required in names, f"{required} missing from the release archive"
+
+
+def _excluded_by(profile: str, name: str) -> bool:
+    return any(name == e or name.startswith(e)
+               for e in build_release.PROFILE_EXCLUDES[profile])
 
 
 def test_archive_never_ships_local_state_or_secrets(archive):
@@ -151,3 +179,43 @@ def test_builder_cli_reports_checksum(tmp_path):
     digest = hashlib.sha256(out.read_bytes()).hexdigest()
     sidecar = out.with_suffix(".zip.sha256").read_text(encoding="utf-8")
     assert digest in sidecar and digest in result.stdout
+
+
+# --- "core" profile: the antivirus-friendly download -------------------------
+# The full archive is plain text too (no .exe anywhere), yet scanners flag
+# process-killing / key-reading helpers. The core profile removes exactly those
+# and nothing the product needs to start.
+
+CORE_REMOVED = ("scripts/doctor.py", "scripts/verify_provider.py", "tests/test_doctor.py")
+
+
+def test_core_profile_drops_the_scanner_sensitive_helpers(core_archive):
+    names = _names(core_archive)
+    for gone in CORE_REMOVED:
+        assert gone not in names, f"{gone} must not ship in the core profile"
+    assert not [n for n in names if n.startswith("deploy/")]
+
+
+def test_core_profile_is_still_a_complete_install(core_archive):
+    names = _names(core_archive)
+    for kept in ("START_HERE.md", "README.md", ".env.example", "requirements.txt",
+                 "alembic.ini", "app/main.py", "app/config.py", "migrations/env.py",
+                 "scripts/setup.sh", "scripts/setup.ps1",
+                 "scripts/run_dev.sh", "scripts/run_dev.ps1",
+                 "scripts/build_release.py", "docs/ANTIVIRUS.md",
+                 "app/web/templates/base.html"):
+        assert kept in names, f"{kept} missing from the core profile"
+    # No executables at all, in either profile: that is the point of the answer
+    # to "why does my antivirus complain".
+    assert not [n for n in names if n.lower().endswith((".exe", ".dll", ".msi", ".scr", ".pyd"))]
+
+
+def test_run_scripts_survive_a_missing_doctor():
+    """Core has no doctor.py, so the run scripts must not call it unconditionally."""
+    sh = (build_release.ROOT / "scripts" / "run_dev.sh").read_text(encoding="utf-8")
+    ps1 = (build_release.ROOT / "scripts" / "run_dev.ps1").read_text(encoding="utf-8")
+    assert "HAVE_DOCTOR" in sh
+    assert "doctor.py" in sh.split("HAVE_DOCTOR", 1)[1]
+    assert "hasDoctor" in ps1
+    # and the PowerShell one must still be ASCII for Windows PowerShell 5.1
+    ps1.encode("ascii")

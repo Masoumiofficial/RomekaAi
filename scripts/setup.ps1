@@ -69,4 +69,9 @@ Write-Host "  open :  http://127.0.0.1:8000/auth"
 Write-Host "  demo :  demo@romka.local / RomkaDemo2026!   (development only)"
 Write-Host ""
 Write-Host "Optional hosted model (GapGPT):"
-Write-Host "  `$env:GAPGPT_API_KEY=\"...\"; .\.venv\Scripts\python.exe scripts\verify_provider.py"
+if (Test-Path "scripts\verify_provider.py") {
+    Write-Host "  `$env:GAPGPT_API_KEY=\"...\"; .\.venv\Scripts\python.exe scripts\verify_provider.py"
+} else {
+    Write-Host "  set GAPGPT_API_KEY in .env and switch AI_PRIMARY_PROVIDER; this ""core"" build"
+    Write-Host "  ships without scripts/verify_provider.py."
+}

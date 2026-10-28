@@ -271,7 +271,11 @@ def test_windows_scripts_never_tell_the_user_to_type_an_angle_bracket_placeholde
 
 def test_windows_start_script_checks_the_port_before_starting():
     text = (doctor.ROOT / "scripts" / "run_dev.ps1").read_text(encoding="utf-8")
-    assert "doctor.py --only port" in text
+    # The doctor is invoked through a variable so the *core* download (which has
+    # no doctor.py) can still start: both must stay true.
+    assert "hasDoctor" in text
+    assert "$doctor --only port" in text
+    assert "doctor.py --only" not in text  # never a hardcoded call that could not exist
     assert "-Port 8010" in text
     assert "Nothing was started" in text
     assert "-FreePort" in text and "--stop-owner" in text

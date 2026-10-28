@@ -8,6 +8,7 @@ from __future__ import annotations
 import subprocess
 import sys
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -229,6 +230,13 @@ def test_daily_review_user_isolation(auth_client, client):
 
 # ── CLI verification script (honest failure paths, no network) ─────────────
 
+# The core download intentionally ships without this helper (antivirus heuristic).
+_VERIFY = Path(__file__).resolve().parent.parent / "scripts" / "verify_provider.py"
+requires_verify_script = pytest.mark.skipif(
+    not _VERIFY.exists(), reason="core profile: scripts/verify_provider.py is not shipped")
+
+
+@requires_verify_script
 def test_verify_provider_script_refuses_without_key(tmp_path):
     out = subprocess.run([sys.executable, "scripts/verify_provider.py",
                           "--env-file", str(tmp_path / "missing.env")],
@@ -238,6 +246,7 @@ def test_verify_provider_script_refuses_without_key(tmp_path):
     assert "Nothing was sent" in out.stdout
 
 
+@requires_verify_script
 def test_verify_provider_script_requires_base_url_for_generic_provider(tmp_path):
     out = subprocess.run([sys.executable, "scripts/verify_provider.py",
                           "--provider", "openai_compatible", "--key-env", "PATH",

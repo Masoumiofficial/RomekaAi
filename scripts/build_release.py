@@ -37,8 +37,25 @@ def _is_secret_env(name: str) -> bool:
 FIXED_TIME = (2026, 10, 28, 0, 0, 0)
 DEFAULT_PREFIX = "romka"
 
+# Some antivirus engines flag automation helpers that enumerate processes, stop
+# them, or read API keys from the environment - even in plain, readable source.
+# The "core" profile ships the same product without those helpers, so a user can
+# install and run ROMKA with nothing that looks like a PUP to a scanner.
+PROFILE_EXCLUDES: dict[str, tuple[str, ...]] = {
+    "full": (),
+    "core": (
+        "scripts/doctor.py",          # process enumeration + taskkill + port probing
+        "scripts/verify_provider.py",  # reads an API key from env and posts it out
+        "tests/test_doctor.py",        # imports the excluded helper
+        "deploy/",                     # systemd/nginx/backup shell automation
+    ),
+}
 
-def collect(prefix: str = "") -> list[tuple[Path, str]]:
+
+def collect(prefix: str = "", profile: str = "full") -> list[tuple[Path, str]]:
+    excludes = PROFILE_EXCLUDES.get(profile)
+    if excludes is None:
+        raise SystemExit(f"unknown profile '{profile}' (choose from {sorted(PROFILE_EXCLUDES)})")
     out: list[tuple[Path, str]] = []
     for path in sorted(ROOT.rglob("*")):
         rel = path.relative_to(ROOT)
@@ -48,19 +65,22 @@ def collect(prefix: str = "") -> list[tuple[Path, str]]:
             continue
         if path.name.startswith(SKIP_NAME_PREFIXES) or _is_secret_env(path.name):
             continue
+        posix = rel.as_posix()
+        if any(posix == e or posix.startswith(e) for e in excludes):
+            continue
         out.append((path, f"{prefix}/{rel.as_posix()}" if prefix else rel.as_posix()))
     assert out, "nothing to archive — wrong project root?"
     return out
 
 
-def build(out_path: Path, prefix: str = DEFAULT_PREFIX) -> Path:
+def build(out_path: Path, prefix: str = DEFAULT_PREFIX, profile: str = "full") -> Path:
     """Build the archive. ``prefix`` puts everything under one folder.
 
     Without it, extracting the zip scatters 130 files into whatever directory the
     user is standing in (found by testing the real archive). With it,
     ``Expand-Archive -DestinationPath C:\\`` or ``unzip`` always yields ``romka/``.
     """
-    files = collect(prefix)
+    files = collect(prefix, profile)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path, arcname in files:
@@ -79,14 +99,20 @@ def main() -> int:
     ap.add_argument("--sha256-file", action="store_true", help="also write <zip>.sha256")
     ap.add_argument("--prefix", default=DEFAULT_PREFIX,
                     help="single top-level folder inside the zip (default: romka; '' = none)")
+    ap.add_argument("--profile", default="full", choices=sorted(PROFILE_EXCLUDES),
+                    help="full = everything; core = no automation helpers that antivirus "
+                         "heuristics may flag")
     args = ap.parse_args()
 
-    out = Path(args.out) if args.out else ROOT / "release" / f"romka-v{args.version}.zip"
-    build(out, prefix=args.prefix)
+    suffix = "" if args.profile == "full" else f"-{args.profile}"
+    out = (Path(args.out) if args.out
+           else ROOT / "release" / f"romka-v{args.version}{suffix}.zip")
+    build(out, prefix=args.prefix, profile=args.profile)
     digest = hashlib.sha256(out.read_bytes()).hexdigest()
     size = out.stat().st_size
     print(f"archive : {out}")
-    print(f"files   : {len(collect(args.prefix))}")
+    print(f"profile : {args.profile}")
+    print(f"files   : {len(collect(args.prefix, args.profile))}")
     print(f"size    : {size:,} bytes ({size / 1024:.1f} KiB)")
     print(f"sha256  : {digest}")
     if args.sha256_file:
