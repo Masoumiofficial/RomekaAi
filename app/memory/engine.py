@@ -47,11 +47,13 @@ class MemoryEngine:
         if not isinstance(key, str) or not 1 <= len(key) <= 200:
             raise ValidationFailed("کلید حافظه نامعتبر است.")
         payload = value if isinstance(value, dict) else {"value": value}
+        previous = []
         if supersede:
-            for old in (db.query(MemoryItem)
+            previous = (db.query(MemoryItem)
                         .filter(MemoryItem.user_id == user_id, MemoryItem.layer == layer,
                                 MemoryItem.key == key, MemoryItem.is_deleted.is_(False))
-                        .all()):
+                        .all())
+            for old in previous:
                 old.is_deleted = True
                 old.confidence = "stale"
         item = MemoryItem(
@@ -61,18 +63,16 @@ class MemoryEngine:
         )
         db.add(item)
         db.flush()
-        if supersede:
-            db.query(MemoryItem).filter(
-                MemoryItem.id != item.id, MemoryItem.user_id == user_id,
-                MemoryItem.layer == layer, MemoryItem.key == key,
-            ).update({MemoryItem.superseded_by: item.id}, synchronize_session=False)
+        for old in previous:
+            old.superseded_by = item.id
+        db.flush()
         return item
 
     def retrieve(
         self, db: Session, *, user_id: int, agent_id: str | None = None,
         layers: list[str] | None = None, query: str | None = None,
         include_sensitive: bool = False, include_inferred: bool = True,
-        limit: int = 20,
+        exclude_keys: set[tuple[str, str]] | None = None, limit: int = 20,
     ) -> list[MemoryItem]:
         """agent_id=None means the user themselves (full access)."""
         now = utcnow()
@@ -82,6 +82,8 @@ class MemoryEngine:
         out: list[tuple[float, MemoryItem]] = []
         q_tokens = _tokens(query or "")
         for item in rows:
+            if exclude_keys and (item.layer, item.key) in exclude_keys:
+                continue
             if item.expires_at is not None:
                 exp = item.expires_at
                 if exp.tzinfo is None:
@@ -94,6 +96,10 @@ class MemoryEngine:
                 if item.agent_scope and agent_id not in item.agent_scope:
                     continue
                 if item.sensitivity == "sensitive" and not include_sensitive:
+                    continue
+                # Stale values are never supplied to an agent. Inferences need
+                # an explicit request; normal model context does not request them.
+                if item.confidence == "stale":
                     continue
                 if item.confidence == "inferred" and not include_inferred:
                     continue
@@ -118,8 +124,13 @@ class MemoryEngine:
         allowed_layers: list[str], include_sensitive: bool = False,
     ) -> tuple[str, list[dict], bool]:
         """Returns (prompt-safe text, sources, has_sensitive)."""
+        # Ambiguous keys are withheld, not promoted to facts. Conflicts are
+        # computed across the owner's active, unexpired records, without placing
+        # the suppressed values or sensitive records into the provider prompt.
+        blocked = {(c["layer"], c["key"]) for c in self.conflicts(db, user_id=user_id)}
         items = self.retrieve(db, user_id=user_id, agent_id=agent_id, query=query,
-                              layers=allowed_layers, include_sensitive=include_sensitive, limit=8)
+                              layers=allowed_layers, include_sensitive=include_sensitive,
+                              include_inferred=False, exclude_keys=blocked, limit=8)
         lines: list[str] = []
         sources: list[dict] = []
         has_sensitive = False
@@ -142,15 +153,22 @@ class MemoryEngine:
                 .filter(MemoryItem.user_id == user_id, MemoryItem.is_deleted.is_(False))
                 .all())
         grouped: dict[tuple[str, str], list[MemoryItem]] = {}
+        now = utcnow()
         for r in rows:
+            exp = r.expires_at
+            if exp is not None:
+                if exp.tzinfo is None:
+                    exp = exp.replace(tzinfo=timezone.utc)
+                if exp <= now:
+                    continue
             grouped.setdefault((r.layer, r.key), []).append(r)
         out = []
         for (layer, key), group in grouped.items():
             values = {json.dumps(g.value, sort_keys=True, ensure_ascii=False) for g in group}
-            if len(values) > 1 or any(g.confidence == "inferred" for g in group):
+            if len(values) > 1 or any(g.confidence != "verified" for g in group):
                 out.append({"layer": layer, "key": key, "active_versions": len(group),
                             "distinct_values": len(values),
-                            "message": f"دادههای متناقض یا تأییدنشده برای «{key}» وجود دارد."})
+                            "message": f"داده‌های متناقض، قدیمی یا تأییدنشده برای «{key}» وجود دارد."})
         return out
 
     def get(self, db: Session, *, user_id: int, item_id: int) -> MemoryItem:
@@ -163,11 +181,19 @@ class MemoryEngine:
 
     def update(self, db: Session, *, user_id: int, item_id: int, value: dict) -> MemoryItem:
         item = self.get(db, user_id=user_id, item_id=item_id)
-        item.value = value
-        item.confidence = "verified"
-        item.source = "user"
+        # Preserve the original row and permissions; editing one conflicted
+        # record must not silently supersede unrelated active versions.
+        updated = MemoryItem(user_id=user_id, layer=item.layer, key=item.key,
+                             value=value, source="user", confidence="verified",
+                             sensitivity=item.sensitivity, agent_scope=list(item.agent_scope or []),
+                             tags=list(item.tags or []), expires_at=item.expires_at)
+        db.add(updated)
         db.flush()
-        return item
+        item.is_deleted = True
+        item.confidence = "stale"
+        item.superseded_by = updated.id
+        db.flush()
+        return updated
 
     def forget(self, db: Session, *, user_id: int, item_id: int) -> MemoryItem:
         item = self.get(db, user_id=user_id, item_id=item_id)

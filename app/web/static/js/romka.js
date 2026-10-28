@@ -22,7 +22,8 @@
     active:"فعال", approved:"تأییدشده", discovered:"شناسایی‌شده", pending_review:"در انتظار بررسی",
     rejected:"ردشده", inactive:"غیرفعال", executed:"اجراشده", pending_approval:"در انتظار تأیید",
     accepted:"پذیرفته", low:"کم", medium:"متوسط", high:"زیاد", verified:"تأییدشده",
-    inferred:"استنباط‌شده", unverified:"تأییدنشده", session:"جلسه", preference:"ترجیحات",
+    inferred:"استنباط‌شده", unverified:"تأییدنشده", stale:"قدیمی", user:"کاربر", import:"واردشده", system:"سیستم", channel:"کانال",
+    public:"عمومی", personal:"شخصی", sensitive:"حساس", session:"جلسه", preference:"ترجیحات",
     project:"پروژه", event:"رویداد", agent:"متخصص", retrievable:"بازیابی‌پذیر",
     planning:"برنامه‌ریزی", backend:"بخش سرور", data:"داده", ui:"رابط کاربری", agents:"متخصصان",
     memory:"حافظه", tools:"ابزارها", skills:"مهارت‌ها", jobs:"کارهای زمان‌بندی‌شده",
@@ -588,20 +589,49 @@
   /* ── memory ── */
   if (page === "memory") {
     loadChrome();
+    let memories = [], editing = null;
+    const closeEditor = () => { editing = null; $("mem-edit-form").hidden = true; };
     const load = async (q="") => {
       try { const [r,c]=await Promise.all([api("/memory"+(q?"?q="+encodeURIComponent(q):"")),api("/memory/conflicts")]);
-        setHTML("mem-conflicts",c.items.length?notice(`${c.items.length} داده متناقض/تأییدنشده دارید. رومکا به‌جای حدس زدن، درباره آنها سؤال می‌کند.`):"");
+        memories = r.items;
+        setHTML("mem-conflicts",c.items.length?notice(`${c.items.length} مورد متناقض، قدیمی یا تأییدنشده از زمینهٔ مدل کنار گذاشته شده است.`):"");
         setHTML("mem-list",r.items.length?r.items.map(x=>`<div class="list-item" style="flex-wrap:wrap">
           <span class="tag ${x.sensitivity==="sensitive"?"danger":x.confidence==="verified"?"ok":"warn"}">${esc(label(x.layer))}</span>
           <span class="grow"><strong>${esc(x.key)}</strong><div class="xs faint">${esc(JSON.stringify(x.value))}</div></span>
-          <span class="faint xs">${esc(label(x.source))} · ${esc(label(x.confidence))}</span>
-          <button class="btn sm ghost danger" data-del="${x.id}">حذف</button></div>`).join(""):`<div class="empty">موردی ثبت نشده.</div>`);
-        document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",async()=>{
-          try{await api(`/memory/${b.dataset.del}`,{method:"DELETE"});load(q);toast("حذف شد.");}catch(e){toast(e.message,true);}
-        }));
+          <span class="faint xs">${esc(label(x.source))} · ${esc(label(x.confidence))} · ${esc(label(x.sensitivity))}</span>
+          <button type="button" class="btn sm ghost" data-edit="${x.id}">ویرایش</button>
+          <button type="button" class="btn sm ghost danger" data-del="${x.id}">حذف</button></div>`).join(""):`<div class="empty">موردی ثبت نشده.</div>`);
       } catch(e){ setHTML("mem-list",errBox(e)); }
     };
-    $("mem-search")?.addEventListener("click",()=>load($("mem-q").value.trim()));
+    $("mem-list").addEventListener("click", async (event) => {
+      const edit = event.target.closest("[data-edit]"), del = event.target.closest("[data-del]");
+      if (edit) {
+        const item = memories.find(x => String(x.id) === edit.dataset.edit);
+        if (!item) return;
+        const plain = item.value && typeof item.value === "object" && !Array.isArray(item.value)
+          && Object.keys(item.value).length === 1 && typeof item.value.value === "string";
+        editing = {id:item.id, plain};
+        $("mem-edit-key").textContent = `کلید: ${item.key} · سطح دسترسی و حساسیت تغییر نمی‌کند`;
+        $("mem-edit-value").value = plain ? item.value.value : JSON.stringify(item.value,null,2);
+        $("mem-edit-help").textContent = plain ? "مقدار متنی را اصلاح کنید؛ نسخه قبلی حفظ می‌شود." : "مقدار ساختاریافته را به‌صورت شیء JSON اصلاح کنید؛ نسخه قبلی حفظ می‌شود.";
+        $("mem-edit-form").hidden = false; $("mem-edit-value").focus();
+      } else if (del && window.confirm("این مورد از حافظه فعال حذف شود؟ نسخه‌های قبلی در خروجی باقی می‌مانند.")) {
+        try { await api(`/memory/${del.dataset.del}`,{method:"DELETE"}); closeEditor(); await load($("mem-q").value.trim()); toast("از حافظه فعال حذف شد."); }
+        catch(e) { toast(e.message,true); }
+      }
+    });
+    $("mem-edit-form").addEventListener("submit",async(event)=>{
+      event.preventDefault(); if (!editing) return;
+      let value;
+      try {
+        value = editing.plain ? {value:$("mem-edit-value").value} : JSON.parse($("mem-edit-value").value);
+        if (!value || Array.isArray(value) || typeof value !== "object") throw new Error("مقدار ساختاریافته باید یک شیء JSON معتبر باشد.");
+      } catch(e) { toast("مقدار نامعتبر است؛ متن JSON را بررسی کنید.",true); return; }
+      try { await api(`/memory/${editing.id}`,{method:"PUT",body:{value}}); closeEditor(); await load($("mem-q").value.trim()); toast("تغییرات ذخیره شد؛ نسخه قبلی حفظ شد."); }
+      catch(e) { toast(e.message,true); }
+    });
+    $("mem-edit-cancel").addEventListener("click",closeEditor);
+    $("mem-search")?.addEventListener("click",()=>{closeEditor();load($("mem-q").value.trim());});
     $("mem-add")?.addEventListener("click",async()=>{
       let value=$("m-value").value.trim(); try{value=JSON.parse(value);}catch(e){}
       const body={layer:$("m-layer").value,key:$("m-key").value.trim(),value,sensitivity:$("m-sens").value};

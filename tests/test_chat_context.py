@@ -183,3 +183,19 @@ def test_router_counts_history_in_estimate_and_blocks_sensitive_marker(db, setti
     with pytest.raises(ProviderUnavailable):
         router.complete(req)
     assert provider.calls == 1
+
+
+def test_conflicted_memory_not_sent_to_model_in_normal_or_stream(auth_client, db, captured):
+    from app.memory.engine import memory_engine
+    c, csrf, uid = auth_client
+    for value, opts in [("CONFIDENTIAL_ONE", {}), ("CONFIDENTIAL_TWO", {"supersede": False})]:
+        memory_engine.store(db, user_id=uid, layer="project", key="projectx", value={"v": value}, **opts)
+    memory_engine.store(db, user_id=uid, layer="project", key="projectx inferred", value={"v": "UNCONFIRMED"}, confidence="inferred")
+    db.flush()
+    send(c, csrf, "projectx")
+    c.post("/api/v1/chat/stream", headers=H(csrf), json={"text": "projectx"})
+    assert len(captured) >= 2
+    for request in captured:
+        system = next(m.content for m in request.messages if m.role == "system")
+        assert "CONFIDENTIAL_ONE" not in system and "CONFIDENTIAL_TWO" not in system and "UNCONFIRMED" not in system
+        assert "متناقض یا تأییدنشده" in system

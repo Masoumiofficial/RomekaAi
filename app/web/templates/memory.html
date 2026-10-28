@@ -6,6 +6,14 @@
       <button class="btn sm ghost" id="mem-export">خروجی</button></div></div>
     <div id="mem-conflicts"></div>
     <div class="list" id="mem-list"></div>
+    <form id="mem-edit-form" class="card flat" style="margin-top:16px" hidden>
+      <div class="card-h"><h2>ویرایش حافظه</h2></div>
+      <div id="mem-edit-key" class="small muted"></div>
+      <div class="field"><label for="mem-edit-value">مقدار</label><textarea id="mem-edit-value" rows="5" required></textarea></div>
+      <p id="mem-edit-help" class="xs faint"></p>
+      <div class="row"><button class="btn sm primary" type="submit">ذخیره تغییرات</button>
+        <button class="btn sm ghost" type="button" id="mem-edit-cancel">انصراف</button></div>
+    </form>
   </div>
   <div class="stack">
     <div class="card">
@@ -27,7 +35,7 @@
         <div><span class="tag">retrievable</span> داده حجیم قابل جستوجو</div>
       </div>
       <div class="hr"></div>
-      <p class="small faint">داده‌های حساس فقط به متخصصان مجاز و هرگز به ارائه‌دهنده خارجی بدون تنظیم صریح ارسال می‌شوند. می‌توانید هر مورد را اصلاح یا حذف کنید.</p>
+      <p class="small faint">حافظه‌های حساس در مسیر معمول به مدل فرستاده نمی‌شوند؛ متن گفتگو ممکن است به ارائه‌دهنده ارسال شود. حذف از حافظه فعال نرم است و نسخه‌های قبلی در خروجی داده‌ها باقی می‌مانند.</p>
     </div>
   </div>
 </div>
