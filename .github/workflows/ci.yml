@@ -7,8 +7,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.11', '3.12']
+        # The Windows installer rejected Python 3.14 for a real user, so the
+        # supported range is tested instead of assumed. 3.11/3.12 are the
+        # conservative pair; 3.13/3.14 are the ones people actually install.
+        python-version: ['3.11', '3.12', '3.13', '3.14']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,3 +46,59 @@ jobs:
         run: |
           pip install pip-audit -q
           pip-audit || true
+
+  windows:
+    # The bugs users actually hit were Windows-only: PowerShell scripts and their
+    # Python detection. This job runs the real installer on the real shell.
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.14']
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: PowerShell scripts parse (ASCII + syntax)
+        shell: pwsh
+        run: |
+          foreach ($f in Get-ChildItem scripts\*.ps1) {
+            $nonAscii = @([System.IO.File]::ReadAllBytes($f.FullName) | Where-Object { $_ -gt 127 })
+            if ($nonAscii.Count -gt 0) { throw "$($f.Name) is not ASCII-only" }
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) { throw "$($f.Name): $($errors[0].Message)" }
+          }
+          Write-Host "all .ps1 files are ASCII and parse cleanly"
+      - name: setup.ps1 (real installer, no test run)
+        shell: pwsh
+        run: .\scripts\setup.ps1 -SkipTests
+      - name: Run the test suite inside the created venv
+        shell: pwsh
+        env:
+          ENVIRONMENT: testing
+          SECRET_KEY: ci-only-secret
+        run: .\.venv\Scripts\python.exe -m pytest -q
+      - name: run_dev.ps1 starts the server and answers health
+        shell: pwsh
+        run: |
+          $job = Start-Job -ScriptBlock {
+            Set-Location $using:PWD
+            .\scripts\run_dev.ps1 -NoReload -Port 8021 -SkipChecks
+          }
+          $ok = $false
+          for ($i = 0; $i -lt 40; $i++) {
+            Start-Sleep -Seconds 2
+            try {
+              $r = Invoke-RestMethod -Uri 'http://127.0.0.1:8021/api/v1/health' -TimeoutSec 3
+              if ($r.ok) { $ok = $true; Write-Host "health: $($r.version)"; break }
+            } catch { }
+          }
+          Stop-Job $job -ErrorAction SilentlyContinue
+          Remove-Job $job -Force -ErrorAction SilentlyContinue
+          if (-not $ok) { throw "run_dev.ps1 did not serve /api/v1/health" }
