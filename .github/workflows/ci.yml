@@ -83,7 +83,17 @@ jobs:
         env:
           ENVIRONMENT: testing
           SECRET_KEY: ci-only-secret
-        run: .\.venv\Scripts\python.exe -m pytest -q
+        run: |
+          .\.venv\Scripts\python.exe -m pytest -q -rf --tb=line 2>&1 |
+            Tee-Object -FilePath pytest-windows.log
+          if ($LASTEXITCODE -ne 0) {
+            # Surface each failing test as a check-run annotation: the raw job log
+            # is not reachable from every environment, annotations are.
+            Get-Content pytest-windows.log |
+              Select-String -Pattern '^(FAILED|ERROR)' |
+              ForEach-Object { Write-Host "::error title=windows-test::$($_.Line)" }
+            exit 1
+          }
       - name: run_dev.ps1 starts the server and answers health
         shell: pwsh
         run: |
