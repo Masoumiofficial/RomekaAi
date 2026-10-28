@@ -1,12 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="grid g-4" style="margin-bottom:16px">
-  <div class="card"><div class="kpi"><span class="l">وظایف باز</span><span class="v" id="k-tasks">—</span><span class="d" id="k-tasks-d">در انتظار برنامه</span></div></div>
-  <div class="card"><div class="kpi"><span class="l">زمان برنامه‌ریزی‌شده</span><span class="v" id="k-min">—</span><span class="d">دقیقه از زمان آزاد امروز</span></div></div>
-  <div class="card"><div class="kpi"><span class="l">اشغال برنامه</span><span class="v" id="k-util">—</span><span class="d"><div class="progress" style="margin-top:7px"><i id="k-bar" style="width:0%"></i></div></span></div></div>
-  <div class="card"><div class="kpi"><span class="l">متخصصان فعال</span><span class="v" id="k-agents">—</span><span class="d" id="k-provider">موتور محلی</span></div></div>
+<section class="dashboard-hero" aria-labelledby="dashboard-welcome">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="eyebrow-dot"></span> فضای شخصی تو</div>
+    <h2 id="dashboard-welcome">یک نگاه روشن‌تر<br><span>به زندگی روزمره.</span></h2>
+    <p>برنامه‌ها، هدف‌ها و کارهای مهمت را یک‌جا ببین؛ با خیال راحت‌تر برای قدم بعدی تصمیم بگیر.</p>
+    <div class="hero-actions"><a href="/planner" class="btn hero-primary">رفتن به برنامه‌ریز <span aria-hidden="true">←</span></a><a href="/chat" class="btn hero-secondary">گفت‌وگو با رومکا</a></div>
+  </div>
+  <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="hero-center"><span>R</span><small>ONE CONNECTED LIFE</small></div><i class="orbit-point point-one"></i><i class="orbit-point point-two"></i><i class="orbit-point point-three"></i></div>
+</section>
+<div class="section-heading"><div><span class="eyebrow section-eyebrow">در یک نگاه</span><h2>نمای کلی امروز</h2></div><span class="section-note">براساس اطلاعات ثبت‌شده</span></div>
+<div class="grid g-4 dashboard-kpis">
+  <div class="card metric-card"><div class="metric-top"><span class="metric-icon mint" aria-hidden="true">✓</span><span class="metric-index">01</span></div><div class="kpi"><span class="l">وظایف باز</span><span class="v" id="k-tasks">—</span><span class="d" id="k-tasks-d">در انتظار برنامه</span></div></div>
+  <div class="card metric-card"><div class="metric-top"><span class="metric-icon blue" aria-hidden="true">◷</span><span class="metric-index">02</span></div><div class="kpi"><span class="l">زمان برنامه‌ریزی‌شده</span><span class="v" id="k-min">—</span><span class="d">دقیقه از زمان آزاد امروز</span></div></div>
+  <div class="card metric-card"><div class="metric-top"><span class="metric-icon peach" aria-hidden="true">◴</span><span class="metric-index">03</span></div><div class="kpi"><span class="l">اشغال برنامه</span><span class="v" id="k-util">—</span><div class="progress" style="margin-top:7px"><i id="k-bar" style="width:0%"></i></div></div></div>
+  <div class="card metric-card"><div class="metric-top"><span class="metric-icon lilac" aria-hidden="true">✳</span><span class="metric-index">04</span></div><div class="kpi"><span class="l">متخصصان فعال</span><span class="v" id="k-agents">—</span><span class="d" id="k-provider">در حال بررسی موتور</span></div></div>
 </div>
 <div id="runtime-notice"></div>
+<div class="section-heading dashboard-section"><div><span class="eyebrow section-eyebrow">زندگی در جریان</span><h2>برنامه و اولویت‌ها</h2></div><span class="section-note">قدم به قدم، با آگاهی بیشتر</span></div>
 <div class="grid g-main" style="margin-bottom:16px">
   <div class="card">
     <div class="card-h"><h2>برنامه امروز</h2><span class="hint" id="today-date">—</span></div>
@@ -24,6 +35,7 @@
     <div class="row" style="margin-top:8px" id="mem-chips"></div>
   </div>
 </div>
+<div class="section-heading dashboard-section"><div><span class="eyebrow section-eyebrow">همراه روزهای تو</span><h2>فضای شخصی</h2></div></div>
 <div class="grid g-2">
   <div class="card">
     <div class="card-h"><h2>نقشه تعاملی رومکا</h2><span class="hint">داده‌های واقعی</span></div>

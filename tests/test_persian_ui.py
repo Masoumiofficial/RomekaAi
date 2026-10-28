@@ -40,7 +40,7 @@ def test_planner_and_project_show_persian_date_inputs(client):
     assert planner.status_code == business.status_code == 200
     assert 'id="plan-date"' in planner.text and "تاریخ شمسی" in planner.text
     assert 'id="proj-due"' in business.text and "موعد شمسی" in business.text
-    assert 'src="/static/js/persian-date.js"' in planner.text
+    assert 'src="/static/js/persian-date.js?v=' in planner.text
     assert 'type="date"' not in planner.text + business.text
     assert client.get("/static/js/persian-date.js").status_code == 200
 

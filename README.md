@@ -17,14 +17,14 @@
 
 | | |
 |---|---|
-| **آرشیو کامل** | [`downloads/romka-v0.2.18.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.18.zip) |
-| **نسخهٔ Core (دوست آنتی‌ویروس)** | [`downloads/romka-v0.2.18-core.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.18-core.zip) |
+| **آرشیو کامل** | [`downloads/romka-v0.2.19.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.19.zip) |
+| **نسخهٔ Core (دوست آنتی‌ویروس)** | [`downloads/romka-v0.2.19-core.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.19-core.zip) |
 | **چک‌سام هر دو** | [`downloads/CHECKSUMS.txt`](https://github.com/Masoumiofficial/RomekaAi/blob/arena/4ebd498f-romekaai/downloads/CHECKSUMS.txt) (یک فایل، بدون دانلود) |
 | **راهنمای نصب** | [`START_HERE.md`](START_HERE.md) |
 
 ```bash
-# ویندوز (PowerShell):  Expand-Archive romka-v0.2.18.zip -DestinationPath C:\ ; cd C:\romka
-unzip romka-v0.2.18.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
+# ویندوز (PowerShell):  Expand-Archive romka-v0.2.19.zip -DestinationPath C:\ ; cd C:\romka
+unzip romka-v0.2.19.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
 ./scripts/setup.sh && ./scripts/run_dev.sh      # ویندوز: .\scripts\setup.ps1 و .\scripts\run_dev.ps1
 ```
 
@@ -47,18 +47,18 @@ unzip romka-v0.2.18.zip && cd romka        # خود آرشیو پوشهٔ romka 
 | بخش | وضعیت | توضیح |
 |---|---|---|
 | مخزن اولیه | ✅ بررسی شد | فقط `README.md` با یک خط؛ بدون کد، بدون وابستگی |
-| Foundation (DB، مهاجرت، احراز هویت، امنیت، لاگ) | ✅ Implemented + Tested | ۲۲ جدول، Alembic (۲ مهاجرت)، نشست امضاشده + هدر Bearer، CSRF، PBKDF2 |
+| Foundation (DB، مهاجرت، احراز هویت، امنیت، لاگ) | ✅ Implemented + Tested | ۲۲ جدول، Alembic (۳ مهاجرت)، نشست امضاشده + هدر Bearer، CSRF، PBKDF2 |
 | ROMKA CORE (گفتوگو، حافظه، مسیریابی، منتقد) | ✅ Implemented + Tested | ۱۱ متخصص، حافظهٔ لایهای با دامنه دسترسی |
 | Life Planner | ✅ Implemented + Tested | زمانبندی مبتنی بر محدودیت، بافر، وابستگی، بازبرنامهریزی |
 | Fitness & Nutrition | ✅ Implemented + Tested (پایه) | تخمین انرژی، برنامه تمرین/غذا، منطق پیشرفت ایمن |
 | Projects / Business | ✅ Implemented + Tested | پروژهها، اهداف، تصمیمها، شاخص پیشرفت واقعی |
 | Skill Intelligence (بخش ۲۱) | ✅ Implemented + Tested | رجیستری ارزیابی، مجوز، SBOM، فعالسازی/بازگشت |
-| رابط وب (RTL، دارک/لایت، آناتومی تعاملی) | ✅ Implemented + Tested (مسیرها) | SVG بومی، بدون کتابخانه نمودار/CDN |
+| رابط وب (RTL، دارک/لایت، واکنش‌گرا، فونت فارسی محلی) | ✅ Implemented + Tested | SVG بومی، بدون CDN؛ قواعد طراحی در [docs/DESIGN.md](docs/DESIGN.md) |
 | Telegram / Bale | ⚠️ Implemented, **live Verified: خیر** | منطق و امنیت تست شده؛ توکن/دسترسی زنده وجود ندارد |
 | ارائهدهنده LLM خارجی | ⚠️ Implemented, **live Verified: خیر** | آداپتور OpenAI-compatible نوشته شده؛ بدون کلید تست نشده |
 | Claude / Gemini بومی، MCP، صدا، اپ موبایل | ❌ Planned | عمداً در این فاز ساخته نشدند |
 
-**تستها:** ۵۹ تست اجرا و عبور کردهاند؛ پوشش ۸۲٪ (`pytest --cov=app`).
+**تستها:** ۲۱۷ تست در مخزن و ۱۹۲ تست در بستهٔ Core از پوشهٔ خالی اجرا و عبور کردهاند.
 **پیشنمایش زنده:** سرور توسعه روی پورت ۸۰۰۰ در حال اجراست (`/auth` نقطه ورود).
 
 ---

@@ -99,7 +99,22 @@
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next; localStorage.setItem("romka-theme", next);
   });
-  $("menu-btn")?.addEventListener("click", () => $("sidebar")?.classList.toggle("open"));
+  const menuButton = $("menu-btn"), sidebar = $("sidebar"), backdrop = $("sidebar-backdrop");
+  const setMenu = (open, restoreFocus = false) => {
+    if (!sidebar || !menuButton) return;
+    sidebar.classList.toggle("open", open);
+    menuButton.setAttribute("aria-expanded", String(open));
+    menuButton.setAttribute("aria-label", open ? "بستن منو" : "باز کردن منو");
+    if (backdrop) backdrop.hidden = !open;
+    if (open) sidebar.querySelector(".nav a")?.focus();
+    else if (restoreFocus) menuButton.focus();
+  };
+  menuButton?.addEventListener("click", () => setMenu(!sidebar?.classList.contains("open"), true));
+  backdrop?.addEventListener("click", () => setMenu(false, true));
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && sidebar?.classList.contains("open")) setMenu(false, true);
+  });
+  window.addEventListener("resize", () => { if (window.innerWidth > 760 && sidebar?.classList.contains("open")) setMenu(false); });
   $("logout-btn")?.addEventListener("click", async () => {
     try { await api("/auth/logout", {method:"POST"}); } catch(e) {}
     clearSession();
