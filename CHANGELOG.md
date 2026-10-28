@@ -2,6 +2,38 @@
 
 همهٔ نسخهها بر اساس [Keep a Changelog](https://keepachangelog.com/) و وضعیت واقعی تستها.
 
+## [0.2.1] — 2026-10-28 — «عیب‌یابی صادقانهٔ پورت»
+
+### Fixed
+- **خطای گزارش‌شده در ویندوز:** مرورگر به‌جای ROMKA صفحهٔ
+  `Error response / Error code: 404 / Message: File not found / Nothing matches the
+  given URI` را نشان می‌داد. این صفحه **از ROMKA نیست**؛ امضای `python -m http.server`
+  (یا CherryPy) است. ROMKA برای مسیر ناشناس JSON برمی‌گرداند
+  (`{"ok":false,"error":{"code":"http_error"...}}`) و هدر `server: uvicorn` دارد.
+  علت واقعی: پورت در اختیار یک سرور فایل ایستا بود و uvicorn نمی‌توانست bind شود.
+- `run_dev.ps1` و `run_dev.sh` دیگر هرگز روی پورت اشغال‌شده بی‌صدا شروع نمی‌کنند:
+  اگر ROMKA از قبل بالا باشد فقط مرورگر را باز می‌کنند و اگر برنامهٔ دیگری پورت را
+  گرفته باشد با پیام روشن («Nothing was started») متوقف می‌شوند.
+
+### Added
+- `scripts/doctor.py` — عیب‌یاب مستقل از وابستگی‌ها (فقط stdlib، حتی با نصب خراب کار
+  می‌کند): نسخهٔ Python، سلامت `.venv` و وابستگی‌ها، وجود/مهاجرت دیتابیس (مقایسهٔ
+  `alembic_version` با آخرین مهاجرت روی دیسک)، و **تشخیص این‌که چه چیزی روی پورت
+  پاسخ می‌دهد**: ROMKA (از JSON سلامت) / سرور فایل ایستا / برنامهٔ دیگر — همراه با
+  PID و فرمان اصلاح. کدهای خروج: ۰ سالم، ۱۰ venv ناسالم، ۱۱ دیتابیس مهاجرت‌نشده،
+  ۱۳ پورت در اختیار برنامهٔ دیگر، ۱۵ ROMKA از قبل در حال اجرا.
+- `scripts/doctor.py --only port|venv|env|db|all` برای استفادهٔ اسکریپتی.
+- ۱۳ تست جدید (`tests/test_doctor.py`) که سرور واقعی `http.server` را بالا می‌آورند و
+  تأیید می‌کنند doctor آن را از ROMKA تشخیص می‌دهد، پیام دقیق می‌دهد، و `run_dev.sh`
+  در آن حالت با کد ۱ و «not usable» متوقف می‌شود.
+
+### Verified
+- `pytest -q` → **۱۳۹ passed** · `ruff` پاک · `bash -n scripts/run_dev.sh` OK.
+- شبیه‌سازی همان خطا در سندباکس: `python3 -m http.server 8098` → doctor
+  `[FAIL] port 8098 is answering, but it is NOT ROMKA · SimpleHTTP/0.6 · PID …` و
+  `run_dev.sh` با کد ۱ متوقف شد. روی پورت خود ROMKA، doctor کد ۱۵ و پیام
+  «already running» داد.
+
 ## [0.2.0-rc.1] — 2026-10-28 — «بستهٔ قابل اجرا برای سیستم شما»
 
 ### Added

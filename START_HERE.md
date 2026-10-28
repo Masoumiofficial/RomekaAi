@@ -1,4 +1,4 @@
-# START HERE — ROMKA v0.2.0
+# START HERE — ROMKA v0.2.1
 
 این بسته، نسخهٔ کامل و قابل اجرای ROMKA روی سیستم خودتان است. هیچ کلید API و هیچ
 توکنی داخل بسته نیست؛ همهٔ فایل‌های حساس (`romka.db`، `.env`، `.romka_dev_secret`)
@@ -51,11 +51,12 @@ unzip romka-v0.2.0.zip -d romka && cd romka
 ## آیا درست کار می‌کند؟
 
 ```bash
+# عیب‌یابی:  .venv\Scripts\python.exe scripts\doctor.py
 # ویندوز:  .\scripts\run_tests.ps1
 # لینوکس:  ./scripts/setup.sh --test-only   یا:  . .venv/bin/activate && pytest -q
 ```
 
-انتظار: **۱۲۶ تست عبور می‌کند** (بدون هیچ سرویس خارجی و بدون کلید API).
+انتظار: **۱۳۹ تست عبور می‌کند** (بدون هیچ سرویس خارجی و بدون کلید API).
 
 سالم‌بودن سرور: <http://127.0.0.1:8000/api/v1/health> باید `{"ok": true}` بدهد.
 
@@ -128,14 +129,65 @@ export GAPGPT_API_KEY="کلید-شما"
 
 ---
 
+## عیب‌یابی سریع (ابزار داخلی)
+
+اگر صفحهٔ مرورگر آن‌چیزی نبود که باید باشد، اول این را اجرا کنید:
+
+```powershell
+.venv\Scripts\python.exe scripts\doctor.py      # ویندوز
+```
+```bash
+.venv/bin/python scripts/doctor.py                 # لینوکس/مک
+```
+
+این ابزار بدون هیچ کتابخانهٔ خارجی کار می‌کند (حتی وقتی نصب خراب است) و می‌گوید:
+Python/venv سالم است یا نه، وابستگی‌ها نصب‌اند یا نه، دیتابیس مهاجرت شده یا نه، و
+**چه برنامه‌ای روی پورت گوش می‌دهد**.
+
+### ⚠️ خطای «Error code: 404 · Message: File not found · Nothing matches the given URI»
+
+این صفحه **از ROMKA نیست**. امضای سرور فایل سادهٔ پایتون (`python -m http.server`)
+یا CherryPy است. ROMKA برای مسیر ناشناس، JSON برمی‌گرداند:
+`{"ok":false,"error":{"code":"http_error",...}}` و هدرش `server: uvicorn` است.
+
+**علت:** پورت شما در اختیار یک سرور دیگر است (اغلب یک `python -m http.server` که از
+قبل باز مانده)، پس uvicorn نتوانسته bind شود و شما به همان سرور قدیمی وصل می‌شوید.
+
+**راه‌حل:**
+
+```powershell
+# ۱) ببینید چه کسی پورت را گرفته (doctor نام و PID را می‌گوید)
+.venv\Scripts\python.exe scripts\doctor.py --only port --port 8000
+
+# ۲) آن برنامه را ببندید (پنجره‌اش را ببندید یا:)
+taskkill /PID <PID> /F
+
+# ۳) ROMKA را بالا بیاورید (اسکریپت خودش پورت را بررسی می‌کند)
+.\scripts\run_dev.ps1
+
+# یا با پورت دیگر:
+.\scripts\run_dev.ps1 -Port 8010
+```
+
+از نسخهٔ ۰٫۲٫۱، `run_dev.ps1` و `run_dev.sh` **قبل از شروع** پورت را بررسی می‌کنند:
+اگر ROMKA از قبل بالا باشد فقط مرورگر را باز می‌کنند، و اگر برنامهٔ دیگری آن را گرفته
+باشد با پیام روشن متوقف می‌شوند («Nothing was started») تا دوباره گمراه نشوید.
+
+بررسی این‌که پاسخ از ROMKA است:
+```powershell
+curl.exe -i http://127.0.0.1:8000/api/v1/health
+# باید: server: uvicorn  و  {"ok":true,"status":"healthy","version":"0.2.1"}
+```
+
 ## اگر خطا گرفتید
 
 | خطا | راه‌حل |
 |---|---|
 | `python` شناخته نمی‌شود | Python را با گزینهٔ «Add to PATH» نصب کنید یا `py -3.11 scripts\...` |
 | `Activate.ps1 cannot be loaded` | `Set-ExecutionPolicy -Scope Process Bypass` |
-| `Port 8000 already in use` | `.\scripts\run_dev.ps1 -Port 8010` (یا `--port 8010`) |
+| `Port 8000 already in use` | `.\scripts\run_dev.ps1 -Port 8010` (یا `PORT=8010 ./scripts/run_dev.sh`) |
+| صفحهٔ `Error code: 404 / File not found / Nothing matches the given URI` | سرور دیگری روی پورت است؛ `scripts/doctor.py --only port` را اجرا و PID را ببندید |
 | `no such table` | `alembic upgrade head` را اجرا کنید (اسکریپت setup خودش انجام می‌دهد) |
 | ورود دمو ناموفق | مطمئن شوید `ROMKA_AUTO_DEMO=true` و `ENVIRONMENT=development` است |
 
-نسخه: `0.2.0` · همهٔ ۱۲۶ تست در زمان ساخت این بسته روی محتوای همین zip اجرا شد.
+نسخه: `0.2.1` · همهٔ ۱۳۹ تست در زمان ساخت این بسته روی محتوای همین zip اجرا شد.

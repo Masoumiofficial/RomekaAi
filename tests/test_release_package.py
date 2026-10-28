@@ -46,7 +46,7 @@ def test_archive_is_a_valid_non_empty_zip(archive):
     "START_HERE.md", ".env.example", "requirements.txt", "requirements-dev.txt",
     "alembic.ini", "pyproject.toml", "app/main.py", "app/config.py",
     "migrations/env.py", "scripts/setup.sh", "scripts/setup.ps1",
-    "scripts/run_dev.ps1", "scripts/run_dev.sh", "scripts/verify_provider.py",
+    "scripts/run_dev.ps1", "scripts/run_dev.sh", "scripts/verify_provider.py", "scripts/doctor.py",
     "scripts/build_release.py", "tests/conftest.py", "docs/STATUS.md",
     "docs/AI-PROVIDERS.md", "docs/DEPLOYMENT.md", "deploy/nginx/romka.conf",
 ])
