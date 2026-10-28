@@ -13,12 +13,34 @@
 
 ---
 
-## وضعیت واقعی (۲۷ اکتبر ۲۰۲۶)
+## دانلود بستهٔ آماده (بدون clone)
+
+| | |
+|---|---|
+| **آرشیو تست‌شده** | [`downloads/romka-v0.2.0.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.0.zip) |
+| **چک‌سام** | [`downloads/romka-v0.2.0.zip.sha256`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.0.zip.sha256) |
+| **راهنمای نصب** | [`START_HERE.md`](START_HERE.md) |
+
+```bash
+# ویندوز (PowerShell):  Expand-Archive romka-v0.2.0.zip C:\romka ; cd C:\romka
+unzip romka-v0.2.0.zip -d romka && cd romka
+./scripts/setup.sh && ./scripts/run_dev.sh      # ویندوز: .\scripts\setup.ps1 و .\scripts\run_dev.ps1
+```
+
+سپس <http://127.0.0.1:8000/auth> — ورود آزمایشی (فقط توسعه):
+`demo@romka.local` / `RomkaDemo2026!`
+
+> این آرشیو همان بایتی است که از پوشهٔ خالی استخراج، نصب و تست شد
+> (`sha256: 43231b84…d7be8a`). ساختش تکرارپذیر است: `python scripts/build_release.py`.
+
+---
+
+## وضعیت واقعی (۲۸ اکتبر ۲۰۲۶)
 
 | بخش | وضعیت | توضیح |
 |---|---|---|
 | مخزن اولیه | ✅ بررسی شد | فقط `README.md` با یک خط؛ بدون کد، بدون وابستگی |
-| Foundation (DB، مهاجرت، احراز هویت، امنیت، لاگ) | ✅ Implemented + Tested | ۲۱ جدول، Alembic، نشست امضاشده، CSRF، PBKDF2 |
+| Foundation (DB، مهاجرت، احراز هویت، امنیت، لاگ) | ✅ Implemented + Tested | ۲۲ جدول، Alembic (۲ مهاجرت)، نشست امضاشده + هدر Bearer، CSRF، PBKDF2 |
 | ROMKA CORE (گفتوگو، حافظه، مسیریابی، منتقد) | ✅ Implemented + Tested | ۱۱ متخصص، حافظهٔ لایهای با دامنه دسترسی |
 | Life Planner | ✅ Implemented + Tested | زمانبندی مبتنی بر محدودیت، بافر، وابستگی، بازبرنامهریزی |
 | Fitness & Nutrition | ✅ Implemented + Tested (پایه) | تخمین انرژی، برنامه تمرین/غذا، منطق پیشرفت ایمن |

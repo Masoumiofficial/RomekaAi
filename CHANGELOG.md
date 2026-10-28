@@ -22,6 +22,11 @@
 - قاعدهٔ حذف `.env.*` باعث می‌شد `.env.example` هم حذف شود؛ در نتیجه نصب تازه
   نمی‌توانست `.env` بسازد و `setup.sh` با `cp: cannot stat '.env.example'` می‌شکست.
 
+### Published
+- `downloads/romka-v0.2.0.zip` + `.sha256` در مخزن منتشر شد (چون
+  `uploads.github.com` از سندباکس در دسترس نیست، به‌جای Release Asset در خود
+  مخزن قرار گرفت) و README یک بخش «دانلود بستهٔ آماده» گرفت.
+
 ### Verified (از صفر، فقط با محتوای همان zip)
 - استخراج در پوشهٔ خالی → `./scripts/setup.sh --skip-tests` → ساخت `.env`، مهاجرت
   هر دو نسخه → `pytest -q` = **۱۲۶ passed** → بالا آمدن سرور روی پورت ۸۰۱۳:
