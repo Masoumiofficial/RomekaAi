@@ -23,6 +23,7 @@ Python/venv سالم است یا نه، وابستگی‌ها نصب‌اند ی
 | خطا | راه‌حل |
 |---|---|
 | `python` شناخته نمی‌شود | Python را با گزینهٔ «Add to PATH» نصب کنید یا `py -3.11 scripts\setup.ps1` |
+| `Python 3.11+ not found` در حالی که پایتون نصب است | اول نسخه را ببینید: `python --version` و `py --list`. اگر ۳٫۱۱ یا جدیدتر بود، مسیر واقعی را بدهید: `.\scripts\setup.ps1 -PythonExe "C:\Python313\python.exe"`. نسخهٔ ۰٫۲٫۸ این حالت را خودش تشخیص می‌دهد (قبل از آن، نسخهٔ ۳٫۱۳/۳٫۱۴ رد می‌شد) |
 | `Activate.ps1 cannot be loaded` / `running scripts is disabled` | `Get-ChildItem *.zip \| Unblock-File` و سپس `powershell -NoProfile -ExecutionPolicy RemoteSigned -File .\scripts\setup.ps1` |
 | `Port 8000 already in use` | `.\scripts\run_dev.ps1 -Port 8010` (یا `PORT=8010 ./scripts/run_dev.sh`) |
 | صفحهٔ `Error code: 404 · File not found · Nothing matches the given URI` | سرور دیگری روی همان پورت است — بخش بعدی |

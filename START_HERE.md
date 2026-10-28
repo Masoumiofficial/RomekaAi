@@ -12,8 +12,9 @@ ROMKA روی سیستم خودتان اجرا می‌شود: یک برنامهٔ
 
 ## ویندوز — چهار قدم
 
-پیش‌نیاز: **Python 3.11 یا 3.12** از <https://www.python.org/downloads/windows/>
-(در نصب، تیک `Add python.exe to PATH` را بزنید).
+پیش‌نیاز: **Python 3.11 یا جدیدتر** از <https://www.python.org/downloads/windows/>
+(در نصب، تیک `Add python.exe to PATH` را بزنید). نسخه‌های ۳٫۱۱ و ۳٫۱۲ در CI تست
+می‌شوند؛ ۳٫۱۳ و ۳٫۱۴ هم توسط `setup.ps1` پذیرفته می‌شوند.
 
 **۱) در پوشهٔ `Downloads` (جایی که zip را ذخیره کرده‌اید):**
 

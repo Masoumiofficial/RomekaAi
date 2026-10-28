@@ -301,3 +301,20 @@ def test_troubleshooting_keeps_the_hard_won_lessons():
     assert "operator is reserved" in text           # the '<' placeholder trap
     assert "-FreePort" in text
     assert "server: uvicorn" in text                # how to tell whose 404 this is
+
+
+def test_windows_setup_accepts_any_supported_python_version():
+    """A user with Python 3.13/3.14 was told 'Python 3.11+ not found'.
+
+    Two real bugs: the probe only accepted 3.11-3.13 (pyproject says >=3.11), and
+    '$parts[1..($parts.Length - 1)]' turned a one-word command ('python') into a
+    bogus argument list, so the fallback could never work.
+    """
+    text = (build_release.ROOT / "scripts" / "setup.ps1").read_text(encoding="utf-8")
+    assert "$MinimumMinor = 11" in text
+    assert '3\\.(11|12|13)' not in text, "version gate is too narrow again"
+    for candidate in ('"py -3.13"', '"py -3.14"', '"py -3"', '"python"'):
+        assert candidate in text, f"{candidate} missing from the probe list"
+    assert "did not answer --version" in text      # explicit -PythonExe is validated
+    assert "-PythonExe" in text
+    assert "$parts.Length" not in text, "fragile array slice is back"
