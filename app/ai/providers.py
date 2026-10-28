@@ -63,7 +63,7 @@ class LocalDeterministicProvider(BaseProvider):
     def chat(self, req: ChatRequest) -> ChatResult:
         started = time.perf_counter()
         system = next((m.content for m in req.messages if m.role == "system"), "")
-        user = next((m.content for m in req.messages if m.role == "user"), "")
+        user = next((m.content for m in reversed(req.messages) if m.role == "user"), "")
         meta = req.metadata or {}
         text = self._compose(system, user, meta)
         prompt_chars = sum(len(m.content) for m in req.messages)

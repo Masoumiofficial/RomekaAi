@@ -266,6 +266,7 @@
         <div><span class="tag">هزینه</span> ${p.cost_usd ?? 0} دلار</div>
         <div><span class="tag">نقد مستقل</span> ${esc(r.critic?.verdict||"—")} (${r.critic?.score??0})</div>
         <div><span class="tag">منابع حافظه</span> ${(r.sources||[]).length} مورد</div>
+        <div><span class="tag">سابقه ارسال‌شده</span> ${r.history_turns_used ?? 0} رفت‌وبرگشت</div>
         ${(r.warnings||[]).length?`<div class="notice">${r.warnings.slice(0,3).map(esc).join("<br>")}</div>`:""}
         </div>`);
       setHTML("chat-actions", (r.suggested_actions||[]).map(a=>`<button class="btn sm" data-ep="${esc(a.endpoint)}" data-type="${esc(a.type)}">${esc(a.label)}</button>`).join(""));
@@ -287,12 +288,13 @@
       holder.innerHTML = `<div class="bubble">…</div>`; log.appendChild(holder);
       try {
         if (!streaming) {
-          const r = await api("/chat/send",{body:{text, conversation_id:convId}});
+          const r = await api("/chat/send",{body:{text, conversation_id:convId, include_history:$("chat-history-optin").checked}});
           holder.outerHTML = renderMsg({role:"assistant",content:r.answer,active_agent_ids:r.active_agents.map(a=>a.id),confidence:r.confidence});
           after(r);
         } else {
           const resp = await fetch(API+"/chat/stream",{method:"POST",credentials:"include",
-            headers:authHeaders({"Content-Type":"application/json","X-CSRF-Token":csrf()}),body:JSON.stringify({text,conversation_id:convId})});
+            headers:authHeaders({"Content-Type":"application/json","X-CSRF-Token":csrf()}),body:JSON.stringify({text,conversation_id:convId,include_history:$("chat-history-optin").checked})});
+          if (!resp.ok) { const e = await resp.json(); throw new Error(e?.error?.message || `خطای ${resp.status}`); }
           const reader = resp.body.getReader(); const dec = new TextDecoder(); let buf="", full="", meta=null;
           while(true){ const {done,value}=await reader.read(); if(done) break;
             buf += dec.decode(value,{stream:true});
@@ -303,7 +305,7 @@
               if(ev.event==="done") meta=ev.meta; if(ev.event==="error") full+=ev.message; }
           }
           holder.outerHTML = renderMsg({role:"assistant",content:full,active_agent_ids:meta?.active_agents||[],confidence:meta?.critic?.score});
-          if(meta){ convId=meta.conversation_id; loadConvs(); setHTML("chat-meta",`<div class="notice ok">پاسخ جریانی کامل شد. نقد: ${esc(meta.critic.verdict)} (${meta.critic.score})</div>`); }
+          if(meta){ convId=meta.conversation_id; loadConvs(); setHTML("chat-meta",`<div class="notice ok">پاسخ جریانی کامل شد. سابقه ارسال‌شده: ${meta.history_turns_used ?? 0} رفت‌وبرگشت. نقد: ${esc(meta.critic.verdict)} (${meta.critic.score})</div>`); }
         }
       } catch(e){ holder.outerHTML = `<div class="msg assistant"><div class="bubble">${esc(e.message)}</div></div>`; }
     };

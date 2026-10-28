@@ -7,7 +7,7 @@
 |---|---|---|---|
 | 0 — Repository Intelligence | ✅ Tested | ممیزی مخزن خالی، ۱۲ کاندیدای متنباز با شواهد، ۸ ADR | بررسی برند/دامنه/علامت تجاری |
 | 1 — Foundation | ✅ Tested | ۲۱ جدول + Alembic (upgrade/downgrade)، احراز هویت، CSRF، لاگ، secrets | PostgreSQL و Redis واقعی روی VPS |
-| 2 — ROMKA CORE | ✅ Tested | رابط گفتوگو، حافظه لایهای، روتینگ، بودجه، منتقد، streaming | tool-calling مدل، LLM زنده |
+| 2 — ROMKA CORE | ✅ Tested | رابط گفتوگو و زمینهٔ اختیاری محدود، حافظه لایهای، روتینگ، بودجه، منتقد، streaming | tool-calling مدل، LLM زنده |
 | 3 — Life Planner | ✅ Tested | زمانبندی قطعی، وابستگی، بافر، تداخل، بازبرنامهریزی، RRULE، مرورها (پایه) | نمای هفتگی/ماهانه drag&drop، یادآور پسزمینهای |
 | 4 — Specialist System | ✅ Tested | ۱۱ متخصص نسخهدار، محدودیت دسترسی، حداکثر ۲ پاسخگو، ActionEngine | ارزیابی کیفیت مبتنی بر LLM، A/B |
 | 5 — Fitness & Nutrition | 🟡 Implemented + Tested (پایه) | ارزیابی، تمرین، غذا، ثبت نتایج، پیشرفت ایمن | نمودار روند، تصاویر پیشرفت، periodization پیشرفته |

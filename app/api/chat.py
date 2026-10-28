@@ -19,7 +19,8 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 class SendIn(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
-    conversation_id: int | None = None
+    conversation_id: int | None = Field(default=None, gt=0)
+    include_history: bool = False  # explicit consent, off by default
 
 
 @router.get("/conversations")
@@ -51,7 +52,7 @@ def messages(conversation_id: int, ctx: AuthContext = Depends(get_auth_context),
 def send(p: SendIn, ctx: AuthContext = Depends(get_auth_context),
          db: Session = Depends(get_db), settings: Settings = Depends(get_settings)) -> dict:
     core = CoreOrchestrator(db, user_id=ctx.user.id, settings=settings)
-    return core.handle(p.text, conversation_id=p.conversation_id)
+    return core.handle(p.text, conversation_id=p.conversation_id, include_history=p.include_history)
 
 
 @router.post("/stream")
@@ -59,8 +60,14 @@ def stream(p: SendIn, ctx: AuthContext = Depends(get_auth_context),
            db: Session = Depends(get_db), settings: Settings = Depends(get_settings)) -> StreamingResponse:
     core = CoreOrchestrator(db, user_id=ctx.user.id, settings=settings)
 
+    # Validate before starting the response; streaming generators run after the
+    # status line is sent and cannot turn a late exception into an HTTP 404.
+    if p.conversation_id is not None:
+        core._conversation(p.conversation_id)
+
     def gen():
-        for event in core.stream(p.text, conversation_id=p.conversation_id):
+        for event in core.stream(p.text, conversation_id=p.conversation_id,
+                                 include_history=p.include_history):
             yield f"event: {event['event']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(gen(), media_type="text/event-stream",
