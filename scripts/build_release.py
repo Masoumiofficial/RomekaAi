@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import re
 import zipfile
 from pathlib import Path
 
@@ -92,9 +93,23 @@ def build(out_path: Path, prefix: str = DEFAULT_PREFIX, profile: str = "full") -
     return out_path
 
 
+def project_version() -> str:
+    """Single source of truth: ``app/__init__.py``.
+
+    A stale ``--version`` default once put the wrong number in a filename, so the
+    flag now defaults to the version the code actually reports.
+    """
+    text = (ROOT / "app" / "__init__.py").read_text(encoding="utf-8")
+    match = re.search(r'__version__\s*=\s*"([^"]+)"', text)
+    if not match:
+        raise SystemExit("cannot read __version__ from app/__init__.py")
+    return match.group(1)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Build the ROMKA release zip")
-    ap.add_argument("--version", default="0.2.0")
+    ap.add_argument("--version", default=None,
+                    help="default: __version__ from app/__init__.py")
     ap.add_argument("--out", default="")
     ap.add_argument("--sha256-file", action="store_true", help="also write <zip>.sha256")
     ap.add_argument("--prefix", default=DEFAULT_PREFIX,
@@ -103,6 +118,8 @@ def main() -> int:
                     help="full = everything; core = no automation helpers that antivirus "
                          "heuristics may flag")
     args = ap.parse_args()
+    if args.version is None:
+        args.version = project_version()
 
     suffix = "" if args.profile == "full" else f"-{args.profile}"
     out = (Path(args.out) if args.out

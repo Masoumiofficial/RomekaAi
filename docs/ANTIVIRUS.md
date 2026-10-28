@@ -37,17 +37,39 @@
 ## ۳) سه گام تأیید (به‌ترتیب)
 
 ### گام ۱ — هش فایل را مقایسه کنید
-هش رسمی هر نسخه در فایل `...zip.sha256` کنار همان آرشیو در مخزن است.
+هش رسمی همهٔ نسخه‌ها در یک فایل متنی به نام `CHECKSUMS.txt` در پوشهٔ `downloads/`
+مخزن است. **لازم نیست دانلودش کنید** — در مرورگر بازش کنید و عدد را با خروجی
+PowerShell/ترمینال خودتان چشم‌به‌چشم مقایسه کنید:
+
+<https://github.com/Masoumiofficial/RomekaAi/blob/arena/4ebd498f-romekaai/downloads/CHECKSUMS.txt>
+
+فایل `.sha256` کنار هر آرشیو هم همان عدد را دارد، ولی **دانلود دوم لازم دارد**؛ اگر
+آن را نگرفتید، خطای `Cannot find path ... .sha256` طبیعی است و به معنی خرابی فایل
+نیست. دیدن همان ۶۴ کاراکتر در صفحهٔ بالا برای تأیید کافی است.
 
 ```powershell
-Get-FileHash .\romka-v0.2.4.zip -Algorithm SHA256
-Get-Content .\romka-v0.2.4.zip.sha256     # باید همان عدد باشد
+# بدون نام فایل: در برابر مچ‌شدن نام با مارک‌داون چت مقاوم است
+Get-ChildItem *.zip | Get-FileHash -Algorithm SHA256 | Format-List
 ```
 ```bash
-sha256sum romka-v0.2.4.zip
+sha256sum *.zip
 ```
 
-اگر عدد یکی بود، فایل بایتی همان چیزی است که ما ساختیم و تست کردیم.
+اگر عدد یکی بود، فایل بایتی **دقیقاً** همان چیزی است که ما ساختیم و تست کردیم؛
+یعنی هر هشداری که می‌بینید روی بایت‌های اصلی ماست و نه یک فایل دستکاری‌شده.
+
+### گام ۱٫۵ — ببینید Defender دقیقاً کدام فایل را بلاک کرده
+این قدم تشخیص را از حدس خارج می‌کند (نیاز به پنجرهٔ PowerShell با دسترسی مدیر):
+
+```powershell
+Get-MpThreatDetection | Sort-Object InitialDetectionTime -Descending |
+    Select-Object -First 3 ThreatID, Resources | Format-List
+```
+
+نام تهدید (مثل `Trojan:Script/Wacatac.B!ml` یا `HackTool:PowerShell/...`) و مسیر فایل
+را یادداشت کنید. اگر مسیر به `pip.exe`/`python.exe` یا پوشهٔ `site-packages` اشاره
+می‌کرد، فایل ما نبوده؛ اگر به `C:\romka\...` اشاره می‌کرد، همان هیوریستیک بخش ۲ است.
+این نام برای گزارش مثبت کاذب هم لازم است.
 
 ### گام ۲ — خودتان از منبع بسازید (قوی‌ترین تأیید)
 هیچ فایل آماده‌ای دانلود نکنید؛ کد را از Git بگیرید و همان را بسازید:
@@ -56,7 +78,7 @@ sha256sum romka-v0.2.4.zip
 git clone https://github.com/Masoumiofficial/RomekaAi.git
 cd RomekaAi
 git checkout arena/4ebd498f-romekaai
-python scripts/build_release.py --version 0.2.4 --sha256-file
+python scripts/build_release.py --sha256-file
 # هش خروجی باید با هش منتشرشده یکی باشد (ساخت عمداً تکرارپذیر است)
 ```
 
@@ -69,8 +91,8 @@ python scripts/build_release.py --version 0.2.4 --sha256-file
 
 ## ۴) اگر باز هم بلاک شد
 
-**الف) نسخهٔ Core را دانلود کنید** (بدون `doctor.py`، بدون `verify_provider.py`، بدون
-`deploy/`):
+**الف) نسخهٔ Core را بگیرید** (بدون `doctor.py`، بدون `verify_provider.py`، بدون
+`deploy/`) — تنها یک فایل دانلود می‌شود و برای تأیید به فایل دوم نیازی نیست:
 
 ```
 downloads/romka-v0.2.4-core.zip
@@ -79,12 +101,17 @@ downloads/romka-v0.2.4-core.zip
 در این نسخه، اگر پورت اشغال باشد، اسکریپت با پیام روشن متوقف می‌شود و کار تمام است —
 هیچ ابزاری پروسه نمی‌بندد.
 
-**ب) برچسب «از اینترنت» را بردارید** (بعد از تأیید هش در گام ۱):
+**ب) برچسب «از اینترنت» را بردارید** (بعد از تأیید هش در گام ۱) و استخراج کنید:
 
 ```powershell
-Unblock-File .\romka-v0.2.4.zip
-Expand-Archive .\romka-v0.2.4.zip -DestinationPath C:\
+# روی همان پوشه‌ای که zip را دانلود کرده‌اید اجرا کنید
+Get-ChildItem *.zip | Unblock-File
+Get-ChildItem *.zip | Expand-Archive -DestinationPath C:\
+cd C:\romka
 ```
+
+اگر ویندوز فایل را قرنطینه کرده بود، از **Windows Security → Protection history**
+گزینهٔ *Restore* را بزنید (فقط بعد از تأیید هش).
 
 **ج) در SmartScreen:** `More info` → `Run anyway`. هرگز «Don't run» را انتخاب نکنید
 مگر این‌که هش را تأیید نکرده باشید.
@@ -92,7 +119,8 @@ Expand-Archive .\romka-v0.2.4.zip -DestinationPath C:\
 **د) گزارش مثبت کاذب به سازندهٔ آنتی‌ویروس** (بهترین راه‌حل بلندمدت). برای Microsoft:
 <https://www.microsoft.com/en-us/wdsi/filesubmission> — فایل را با گزینهٔ
 *I believe this file is incorrectly detected* بفرستید. برای Kaspersky/Norton/ESET هم
-فرم مشابه «False positive» دارند. با هش فایل و نام نسخه، بررسی سریع‌تر است.
+فرم مشابه «False positive» دارند. با هش فایل، نام نسخه و **نام تهدیدی که در گام ۱٫۵
+دیدید** بررسی سریع‌تر است.
 
 **ه) اگر لازم شد، فقط پوشهٔ پروژه را استثنا کنید** (نه کل درایو، نه خاموش‌کردن
 آنتی‌ویروس):

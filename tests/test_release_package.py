@@ -219,3 +219,39 @@ def test_run_scripts_survive_a_missing_doctor():
     assert "hasDoctor" in ps1
     # and the PowerShell one must still be ASCII for Windows PowerShell 5.1
     ps1.encode("ascii")
+
+
+# --- published checksums: one file, no second download ----------------------
+# A user verified the zip, then got "Cannot find path ... .sha256" because the
+# sidecar is a *separate* download. downloads/CHECKSUMS.txt can be read straight
+# from the GitHub web page, so it must exist and must describe what is published.
+
+def test_builder_defaults_to_the_version_the_code_reports(tmp_path):
+    sys.path.insert(0, str(Path(build_release.ROOT)))
+    from app import __version__ as code_version
+    out = tmp_path / "romka.zip"
+    result = subprocess.run([sys.executable, "scripts/build_release.py", "--out", str(out)],
+                            capture_output=True, text=True, cwd=build_release.ROOT)
+    assert result.returncode == 0, result.stderr
+    assert build_release.project_version() == code_version
+    assert out.exists()
+
+
+def test_published_checksums_file_matches_the_published_archives():
+    downloads = Path(build_release.ROOT) / "downloads"
+    zips = sorted(downloads.glob("*.zip"))
+    if not zips:
+        pytest.skip("no published archives in this tree")
+    text = (downloads / "CHECKSUMS.txt").read_text(encoding="utf-8")
+    listed = set(re.findall(r"\b([0-9a-f]{64})\b", text))
+    for zip_path in zips:
+        digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+        assert digest in listed, f"{zip_path.name} is published but its sha256 is not in CHECKSUMS.txt"
+        assert zip_path.name in text, f"{zip_path.name} is not named in CHECKSUMS.txt"
+
+
+def test_published_archives_are_the_current_version():
+    """A stale download is worse than none: it cannot be reproduced from HEAD."""
+    from app import __version__ as code_version
+    for zip_path in (Path(build_release.ROOT) / "downloads").glob("*.zip"):
+        assert code_version in zip_path.name, f"{zip_path.name} is not v{code_version}"

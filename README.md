@@ -17,14 +17,14 @@
 
 | | |
 |---|---|
-| **آرشیو کامل** | [`downloads/romka-v0.2.4.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.4.zip) |
-| **نسخهٔ Core (دوست آنتی‌ویروس)** | [`downloads/romka-v0.2.4-core.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.4-core.zip) |
-| **چک‌سام هر دو** | `downloads/romka-v0.2.4.zip.sha256` و `downloads/romka-v0.2.4-core.zip.sha256` |
+| **آرشیو کامل** | [`downloads/romka-v0.2.5.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.5.zip) |
+| **نسخهٔ Core (دوست آنتی‌ویروس)** | [`downloads/romka-v0.2.5-core.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.5-core.zip) |
+| **چک‌سام هر دو** | [`downloads/CHECKSUMS.txt`](https://github.com/Masoumiofficial/RomekaAi/blob/arena/4ebd498f-romekaai/downloads/CHECKSUMS.txt) (یک فایل، بدون دانلود) |
 | **راهنمای نصب** | [`START_HERE.md`](START_HERE.md) |
 
 ```bash
-# ویندوز (PowerShell):  Expand-Archive romka-v0.2.4.zip -DestinationPath C:\ ; cd C:\romka
-unzip romka-v0.2.4.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
+# ویندوز (PowerShell):  Expand-Archive romka-v0.2.5.zip -DestinationPath C:\ ; cd C:\romka
+unzip romka-v0.2.5.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
 ./scripts/setup.sh && ./scripts/run_dev.sh      # ویندوز: .\scripts\setup.ps1 و .\scripts\run_dev.ps1
 ```
 
@@ -35,7 +35,7 @@ unzip romka-v0.2.4.zip && cd romka        # خود آرشیو پوشهٔ romka �
 > ندارد و هش معمولاً SmartScreen یا هیوریستیک است؛ نسخهٔ Core یا ساخت از منبع، مسیر امن است.
 >
 > این آرشیو همان بایتی است که از پوشهٔ خالی استخراج، نصب و تست شد. هش معتبر همیشه
-> در فایل `downloads/romka-v0.2.4.zip.sha256` کنار خود آرشیو است (چون هر تغییر
+> در فایل `downloads/CHECKSUMS.txt` کنار خود آرشیو است (چون هر تغییر
 > مستندات هش را عوض می‌کند، عدد در متن‌ها تکرار نمی‌شود). ساختش تکرارپذیر است:
 > `python scripts/build_release.py`. اگر مرورگر صفحهٔ
 > `404 File not found` نشان داد، یعنی سرور دیگری روی پورت است: `python scripts/doctor.py`.

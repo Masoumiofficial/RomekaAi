@@ -9,9 +9,10 @@
 
 | فایل | نسخه | برای چه کسی |
 |---|---|---|
-| `romka-v0.2.4.zip` | 0.2.4 — **کامل** (۱۳۰ فایل) | نسخهٔ پیش‌فرض؛ همهٔ ابزارها از جمله `doctor.py` |
-| `romka-v0.2.4-core.zip` | 0.2.4 — **Core** (۱۲۲ فایل) | اگر آنتی‌ویروس/Defender هشدار داد |
-| `romka-v0.2.4.zip.sha256` · `romka-v0.2.4-core.zip.sha256` | — | هش معتبر هر فایل |
+| `romka-v0.2.5.zip` | 0.2.5 — **کامل** (۱۳۲ فایل) | نسخهٔ پیش‌فرض؛ همهٔ ابزارها از جمله `doctor.py` |
+| `romka-v0.2.5-core.zip` | 0.2.5 — **Core** (۱۲۳ فایل) | اگر آنتی‌ویروس/Defender هشدار داد |
+| [`CHECKSUMS.txt`](CHECKSUMS.txt) | — | هش هر دو آرشیو، **بدون نیاز به دانلود** (در مرورگر باز کنید) |
+| `romka-v0.2.5.zip.sha256` · `romka-v0.2.5-core.zip.sha256` | — | همان عدد، کنار هر فایل (اختیاری) |
 
 تفاوت دو نسخه فقط سه فایل و یک پوشه است: `scripts/doctor.py` (فهرست پروسه‌ها،
 بستن پروسهٔ اشغال‌کنندهٔ پورت)، `scripts/verify_provider.py` (خواندن کلید API از
@@ -20,17 +21,21 @@
 `run_dev` با پیام روشن متوقف می‌شود و باید خودتان برنامهٔ مزاحم را ببندید.
 
 سابقه: ~~`romka-v0.2.0.zip`~~، ~~`romka-v0.2.1.zip`~~، ~~`romka-v0.2.2.zip`~~،
-~~`romka-v0.2.3.zip`~~ جایگزین شده‌اند.
+~~`romka-v0.2.3.zip`~~، ~~`romka-v0.2.4.zip`~~ جایگزین شده‌اند.
 
-> هش داخل متن تکرار نمی‌شود؛ مرجع، فایل `.sha256` است تا با هر بازسازی خودش
+> فایل `.sha256` یک **دانلود جدا** است؛ اگر آن را نگرفتید خطای
+> `Cannot find path ... .sha256` طبیعی است. برای تأیید، همان عدد را از
+> `CHECKSUMS.txt` در مرورگر بخوانید و با `Get-FileHash` مقایسه کنید.
+>
+> هش داخل خود آرشیو تکرار نمی‌شود؛ مرجع، `CHECKSUMS.txt` است تا با هر بازسازی خودش
 > هم‌زمان به‌روز شود.
 
 ## بازسازی و بررسی
 
 ```bash
-python scripts/build_release.py --version 0.2.4 --sha256-file            # کامل
-python scripts/build_release.py --version 0.2.4 --profile core --sha256-file   # Core
-sha256sum release/romka-v0.2.4.zip        # ویندوز: Get-FileHash -Algorithm SHA256
+python scripts/build_release.py --sha256-file                      # کامل
+python scripts/build_release.py --profile core --sha256-file       # Core
+sha256sum release/romka-v0.2.5.zip        # ویندوز: Get-FileHash -Algorithm SHA256
 ```
 
 اگر عدد خروجی با فایل `.sha256` یکی بود، فایل بایتی همان چیزی است که تست شد.
@@ -38,12 +43,12 @@ sha256sum release/romka-v0.2.4.zip        # ویندوز: Get-FileHash -Algorith
 ## نصب پس از دانلود
 
 ```bash
-unzip romka-v0.2.4.zip && cd romka
+unzip romka-v0.2.5.zip && cd romka
 ./scripts/setup.sh && ./scripts/run_dev.sh
 ```
 
 ```powershell
-Expand-Archive .\romka-v0.2.4.zip -DestinationPath C:\ ; cd C:\romka
+Expand-Archive .\romka-v0.2.5.zip -DestinationPath C:\ ; cd C:\romka
 .\scripts\setup.ps1 ; .\scripts\run_dev.ps1
 ```
 
