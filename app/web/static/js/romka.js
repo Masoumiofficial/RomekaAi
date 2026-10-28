@@ -2,7 +2,20 @@
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || document.body.dataset.csrf || "";
+  /* Session transport: cookie when the browser allows it, signed bearer token
+     when the embedded preview blocks third-party cookies. Token lives in
+     sessionStorage only for this tab and is never written to the URL. */
+  const SESSION_KEY = "romka.session.v1";
+  const loadSession = () => { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); } catch(e) { return null; } };
+  const saveSession = (token, csrfToken) => { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({token, csrf: csrfToken})); } catch(e) {} };
+  const clearSession = () => { try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {} };
+  const authHeaders = (extra) => {
+    const h = Object.assign({}, extra || {});
+    const s = loadSession();
+    if (s && s.token) h["Authorization"] = "Bearer " + s.token;
+    return h;
+  };
+  const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || document.body.dataset.csrf || (loadSession()?.csrf || "");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
   const hhmm = (m) => `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
   const API = "/api/v1";
@@ -15,7 +28,7 @@
   }
   async function api(path, opts={}) {
     const method = opts.method || (opts.body ? "POST" : "GET");
-    const init = { method, credentials: "same-origin", headers: { "Content-Type": "application/json" } };
+    const init = { method, credentials: "include", headers: authHeaders({ "Content-Type": "application/json" }) };
     if (method !== "GET") init.headers["X-CSRF-Token"] = csrf();
     if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
     let r;
@@ -32,6 +45,25 @@
   function notice(text, kind="warn") { return `<div class="notice ${kind==="danger"?"danger":kind==="ok"?"ok":""}">${esc(text)}</div>`; }
   const errBox = (e) => `<div class="notice danger">${esc(e.message || e)}</div>`;
 
+  /* ── session guard for embedded previews (third-party cookies blocked) ── */
+  if (page !== "auth" && document.body.dataset.auth === "client") {
+    const stored = loadSession();
+    if (!stored || !stored.token) { location.replace("/auth"); }
+    else {
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      document.body.dataset.csrf = stored.csrf || "";
+      if (meta) meta.content = stored.csrf || "";
+      api("/auth/me").then(r => {
+        if (r.csrf_token) {
+          document.body.dataset.csrf = r.csrf_token;
+          if (meta) meta.content = r.csrf_token;
+        }
+        const foot = document.querySelector(".sidebar-foot .small");
+        if (foot && r.user) foot.textContent = r.user.display_name || r.user.email;
+      }).catch(() => { clearSession(); location.replace("/auth"); });
+    }
+  }
+
   /* ── chrome ── */
   const savedTheme = localStorage.getItem("romka-theme");
   if (savedTheme) document.documentElement.dataset.theme = savedTheme;
@@ -42,6 +74,7 @@
   $("menu-btn")?.addEventListener("click", () => $("sidebar")?.classList.toggle("open"));
   $("logout-btn")?.addEventListener("click", async () => {
     try { await api("/auth/logout", {method:"POST"}); } catch(e) {}
+    clearSession();
     location.href = "/auth";
   });
   document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => {
@@ -55,7 +88,7 @@
       const s = await api("/status");
       const tag = $("env-tag"); if (tag) { tag.textContent = s.environment === "production" ? "تولید" : "توسعه";
         tag.className = "tag " + (s.environment === "production" ? "ok" : "warn"); }
-      const p = (s.providers||[]).find(x => x.name === "primary") || (s.providers||[])[0];
+      const p = (s.providers||[]).find(x => x.role === "primary") || (s.providers||[])[0];
       setHTML("sb-provider", esc(p ? (p.external ? "خارجی" : "محلی") : "—"));
       if ($("status-list")) setHTML("status-list", (s.runtime_warnings||[]).map(w =>
         `<div class="list-item"><span class="tag warn">توجه</span><span class="grow">${esc(w)}</span></div>`).join("") || notice("همه چیز پیکربندی شده است.","ok"));
@@ -71,9 +104,13 @@
       $("submit-btn").textContent = mode === "register" ? "ایجاد حساب" : "ورود";
       $("auth-msg").textContent = "";
     }));
+    const afterAuth = (data) => {
+      if (data.session_token) saveSession(data.session_token, data.csrf_token);
+      location.href = "/";
+    };
     const go = async (path, body) => {
       $("submit-btn").disabled = true; $("auth-msg").textContent = "در حال پردازش…";
-      try { await api(path, {body}); location.href = "/"; }
+      try { afterAuth(await api(path, {body})); }
       catch(e) { $("auth-msg").innerHTML = errBox(e); $("submit-btn").disabled = false; }
     };
     $("auth-form").addEventListener("submit", (ev) => {
@@ -83,8 +120,16 @@
       go(mode === "register" ? "/auth/register" : "/auth/login", body);
     });
     $("guest-btn").addEventListener("click", async () => {
-      try { await api("/auth/guest", {body:{}}); location.href = "/"; }
+      try { afterAuth(await api("/auth/guest", {body:{}})); }
       catch(e) { $("auth-msg").innerHTML = errBox(e); }
+    });
+    $("demo-fill")?.addEventListener("click", () => {
+      mode = "login";
+      document.querySelectorAll(".auth-card .tab").forEach(t => t.classList.toggle("active", t.dataset.tab === "login"));
+      $("name-field").style.display = "none"; $("submit-btn").textContent = "ورود";
+      $("email").value = $("demo-fill").dataset.email;
+      $("password").value = $("demo-fill").dataset.password;
+      $("auth-msg").textContent = "اطلاعات حساب آزمایشی پر شد؛ دکمه «ورود» را بزنید.";
     });
   }
 
@@ -200,7 +245,7 @@
       document.querySelectorAll("#chat-actions button").forEach(b=>b.addEventListener("click", async()=>{
         try {
           if (b.dataset.type === "replan") { await api(b.dataset.ep, {body:{extended_events:{}, energy_mode:"normal"}}); toast("بازبرنامهریزی انجام شد؛ به برنامهریز مراجعه کنید."); }
-          else { await fetch(API + b.dataset.ep, {method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json","X-CSRF-Token":csrf()}, body: JSON.stringify({energy_mode: b.dataset.type === "light_day" ? "low" : "normal"})}); toast("برنامه ساخته شد؛ به برنامهریز مراجعه کنید."); }
+          else { await fetch(API + b.dataset.ep, {method:"POST", credentials:"include", headers:authHeaders({"Content-Type":"application/json","X-CSRF-Token":csrf()}), body: JSON.stringify({energy_mode: b.dataset.type === "light_day" ? "low" : "normal"})}); toast("برنامه ساخته شد؛ به برنامهریز مراجعه کنید."); }
         } catch(e){ toast(e.message,true); }
       }));
     };
@@ -219,8 +264,8 @@
           holder.outerHTML = renderMsg({role:"assistant",content:r.answer,active_agent_ids:r.active_agents.map(a=>a.id),confidence:r.confidence});
           after(r);
         } else {
-          const resp = await fetch(API+"/chat/stream",{method:"POST",credentials:"same-origin",
-            headers:{"Content-Type":"application/json","X-CSRF-Token":csrf()},body:JSON.stringify({text,conversation_id:convId})});
+          const resp = await fetch(API+"/chat/stream",{method:"POST",credentials:"include",
+            headers:authHeaders({"Content-Type":"application/json","X-CSRF-Token":csrf()}),body:JSON.stringify({text,conversation_id:convId})});
           const reader = resp.body.getReader(); const dec = new TextDecoder(); let buf="", full="", meta=null;
           while(true){ const {done,value}=await reader.read(); if(done) break;
             buf += dec.decode(value,{stream:true});
@@ -468,7 +513,8 @@
     Promise.all([api("/status"),api("/budget"),api("/skills"),api("/channels/status"),
                  api("/security-events"),api("/actions"),api("/channels/identities")]).then(([s,b,sk,ch,se,ac,ids])=>{
       setHTML("provider-list",(s.providers||[]).map(p=>`<div class="list-item"><span class="tag ${p.available?"ok":"warn"}">${esc(p.name)}</span>
-        <span class="grow">${esc(p.model||"—")}</span><span class="faint xs">${p.external?"خارجی":"محلی"}</span></div>`).join(""));
+        <span class="grow">${esc(p.model||"—")}</span><span class="faint xs">${p.external?(p.verified_live?"خارجی · زنده تأییدشده":"خارجی · زنده تأییدنشده"):"محلی"}</span></div>
+        ${p.reason?`<div class="xs warn" style="width:100%">${esc(p.reason)}</div>`:""}`).join(""));
       setHTML("budget-box",`<div class="grid g-2">
         ${[["مصرف روزانه",b.state.daily_spent_usd+" / "+b.state.daily_budget_usd],["مصرف ماهانه",b.state.monthly_spent_usd+" / "+b.state.monthly_budget_usd],
            ["حداکثر فراخوانی",b.state.max_calls_per_request],["حداکثر گام ایجنت",b.state.max_agent_steps]].map(([l,v])=>
@@ -500,6 +546,17 @@
       }));
       setHTML("ch-list",ids.items.length?ids.items.map(x=>`<div class="list-item"><span class="tag">${esc(x.channel)}</span><span class="grow mono">${esc(x.external_id)}</span></div>`).join(""):`<div class="empty">هویتی متصل نشده.</div>`);
     }).catch(e=>{ setHTML("status-list",errBox(e)); });
+    $("verify-provider")?.addEventListener("click",async()=>{
+      const btn=$("verify-provider"); btn.disabled=true;
+      setHTML("provider-verify","<span class=\"faint\">در حال انجام یک فراخوانی آزمایشی…</span>");
+      try{
+        const r=await api("/providers/verify",{method:"POST",body:{}});
+        setHTML("provider-verify", r.verified_live
+          ? notice(`اتصال زنده تأیید شد: ${r.provider} / ${r.model} · ${r.latency_ms}ms · ${r.cost_usd}$`,"ok")
+          : notice(r.reason || r.error || "اتصال زنده تأیید نشد."));
+      }catch(e){ setHTML("provider-verify",errBox(e)); }
+      finally{ btn.disabled=false; }
+    });
     $("ch-add")?.addEventListener("click",async()=>{
       const body={channel:$("ch-name").value,external_id:$("ch-id").value.trim()};
       if(!body.external_id)return toast("شناسه لازم است.",true);

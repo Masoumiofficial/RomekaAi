@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/css/romka.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%238b7cf6'/><text x='32' y='43' font-size='36' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>R</text></svg>">
 </head>
-<body data-page="{{ page }}" data-csrf="{{ csrf }}">
+<body data-page="{{ page }}" data-csrf="{{ csrf }}" data-auth="{{ auth_mode }}">
 <div class="shell">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
@@ -31,7 +31,7 @@
     <div class="card flat" style="padding:12px">
       <div class="chip-mini"><span>موتور AI</span><span id="sb-provider" class="faint">…</span></div>
       <div class="chip-mini" style="margin-top:6px"><span>برنامه</span><span id="sb-plan" class="faint">…</span></div>
-      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.1.0</span></div>
+      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.1.1</span></div>
     </div>
     <div class="sidebar-foot">
       <div class="small faint" style="margin-bottom:8px">{{ user.display_name or user.email }}</div>

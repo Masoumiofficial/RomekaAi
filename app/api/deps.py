@@ -17,6 +17,44 @@ from app.db.models import User
 from app.db.session import get_db
 
 SESSION_COOKIE = "romka_session"
+SESSION_HEADER = "X-ROMKA-Session"
+
+
+def extract_session_token(request: Request) -> str:
+    """Session token from Authorization / explicit header / cookie (in that order).
+
+    Browsers increasingly refuse third-party cookies inside an embedded preview.
+    The signed token is therefore also accepted as a bearer header; the HTML
+    pages are static shells and every data API still requires this dependency.
+    """
+    authorization = request.headers.get("authorization", "")
+    if authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+        if token:
+            return token
+    header = request.headers.get(SESSION_HEADER, "").strip()
+    if header:
+        return header
+    return request.cookies.get(SESSION_COOKIE, "")
+
+
+def session_cookie_kwargs(request: Request, settings: Settings) -> dict:
+    """Cookie flags that work both on localhost and in a cross-site HTTPS iframe.
+
+    A header claiming HTTPS only makes the cookie *stricter* (Secure +
+    SameSite=None); it can never relax a cookie, so trusting it here is safe.
+    CHIPS (``Partitioned``) is intentionally not set: it needs Python >= 3.14,
+    and SameSite=None; Secure is enough for a third-party HTTPS iframe.
+    """
+    forwarded = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    https = request.url.scheme == "https" or forwarded == "https"
+    mode = (settings.COOKIE_SAMESITE or "auto").lower()
+    if mode not in ("auto", "lax", "strict", "none"):
+        mode = "auto"
+    if mode == "auto":
+        mode = "none" if https else "lax"
+    secure = bool(settings.COOKIE_SECURE) or mode == "none"
+    return {"samesite": mode, "secure": secure}
 
 
 @dataclass(frozen=True)
@@ -39,7 +77,7 @@ def get_auth_context(
     db: Session = Depends(get_db),
     signer: SessionSigner = Depends(get_signer),
 ) -> AuthContext:
-    token = request.cookies.get(SESSION_COOKIE, "")
+    token = extract_session_token(request)
     data = signer.read(token)
     if data is None:
         raise Unauthorized("نشست معتبر نیست. لطفاً دوباره وارد شوید.")
@@ -54,7 +92,7 @@ def optional_auth_context(
     db: Session = Depends(get_db),
     signer: SessionSigner = Depends(get_signer),
 ) -> AuthContext | None:
-    token = request.cookies.get(SESSION_COOKIE, "")
+    token = extract_session_token(request)
     if not token:
         return None
     data = signer.read(token)

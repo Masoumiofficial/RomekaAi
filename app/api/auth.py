@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field, StringConstraints
 Email = Annotated[str, StringConstraints(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", min_length=5, max_length=320)]
 from sqlalchemy.orm import Session
 
-from app.api.deps import SESSION_COOKIE, AuthContext, get_auth_context, get_signer
+from app.api.deps import (SESSION_COOKIE, AuthContext, get_auth_context,
+                          get_signer, session_cookie_kwargs)
 from app.config import Settings, get_settings
 from app.core.errors import Conflict, PermissionDenied, Unauthorized
 from app.core.security import SessionSigner, hash_password, new_csrf_token, verify_password
@@ -33,14 +34,15 @@ class LoginIn(BaseModel):
     password: str = Field(max_length=128)
 
 
-def _set_session(response: Response, user: User, signer: SessionSigner, settings: Settings) -> str:
+def _set_session(request: Request, response: Response, user: User,
+                 signer: SessionSigner, settings: Settings) -> tuple[str, str]:
     csrf = new_csrf_token()
     token = signer.create(user.id, csrf)
     response.set_cookie(
         SESSION_COOKIE, token, max_age=settings.SESSION_MAX_AGE_SECONDS,
-        httponly=True, samesite="lax", secure=settings.COOKIE_SECURE, path="/",
+        httponly=True, path="/", **session_cookie_kwargs(request, settings),
     )
-    return csrf
+    return csrf, token
 
 
 def _public_user(u: User) -> dict:
@@ -64,14 +66,14 @@ def _create_user(db: Session, *, email: str, password: str, display_name: str,
 
 
 @router.post("/register")
-def register(payload: RegisterIn, response: Response, db: Session = Depends(get_db),
+def register(payload: RegisterIn, request: Request, response: Response, db: Session = Depends(get_db),
              signer: SessionSigner = Depends(get_signer),
              settings: Settings = Depends(get_settings)) -> dict:
     user = _create_user(db, email=payload.email, password=payload.password,
                         display_name=payload.display_name, timezone=payload.timezone,
                         locale=payload.locale)
-    csrf = _set_session(response, user, signer, settings)
-    return {"ok": True, "user": _public_user(user), "csrf_token": csrf}
+    csrf, token = _set_session(request, response, user, signer, settings)
+    return {"ok": True, "user": _public_user(user), "csrf_token": csrf, "session_token": token}
 
 
 @router.post("/login")
@@ -85,13 +87,16 @@ def login(payload: LoginIn, request: Request, response: Response,
         log_security_event(db, event_type="failed_login", channel="web",
                            detail=f"email={email}", ip=request.client.host if request.client else "")
         raise Unauthorized("ایمیل یا رمز عبور نادرست است.")
-    csrf = _set_session(response, user, signer, settings)
-    return {"ok": True, "user": _public_user(user), "csrf_token": csrf}
+    csrf, token = _set_session(request, response, user, signer, settings)
+    return {"ok": True, "user": _public_user(user), "csrf_token": csrf, "session_token": token}
 
 
 @router.post("/logout")
-def logout(response: Response) -> dict:
-    response.delete_cookie(SESSION_COOKIE, path="/")
+def logout(request: Request, response: Response,
+           settings: Settings = Depends(get_settings)) -> dict:
+    flags = session_cookie_kwargs(request, settings)
+    response.delete_cookie(SESSION_COOKIE, path="/", samesite=flags["samesite"],
+                           secure=flags["secure"], httponly=True)
     return {"ok": True}
 
 
@@ -101,7 +106,7 @@ def me(ctx: AuthContext = Depends(get_auth_context)) -> dict:
 
 
 @router.post("/guest")
-def guest(response: Response, db: Session = Depends(get_db),
+def guest(request: Request, response: Response, db: Session = Depends(get_db),
           signer: SessionSigner = Depends(get_signer),
           settings: Settings = Depends(get_settings)) -> dict:
     """Dev-only, isolated one-click account. Never available in production."""
@@ -110,6 +115,7 @@ def guest(response: Response, db: Session = Depends(get_db),
     user = _create_user(db, email=f"guest-{secrets.token_hex(8)}@romka.local",
                         password=secrets.token_urlsafe(32), display_name="مهمان رومکا",
                         timezone="Asia/Tehran", locale="fa")
-    csrf = _set_session(response, user, signer, settings)
+    csrf, token = _set_session(request, response, user, signer, settings)
     return {"ok": True, "user": _public_user(user), "csrf_token": csrf,
+            "session_token": token,
             "note": "حساب موقت توسعه؛ دادهها فقط برای این نشست ایزوله است."}

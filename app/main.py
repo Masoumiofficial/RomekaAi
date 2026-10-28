@@ -10,8 +10,9 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from app import __version__
 from app.api import agents as agents_api
-from app.api import auth, channels, chat, data, fitness, memory, planner, profile, skills, system
-from app.api.deps import SESSION_COOKIE, rate_limiter
+from app.api import (auth, channels, chat, data, fitness, memory, planner, profile,
+                     providers, skills, system)
+from app.api.deps import extract_session_token, rate_limiter
 from app.config import Settings, get_settings
 from app.core.errors import register_error_handlers
 from app.core.security import constant_time_equal
@@ -40,10 +41,12 @@ def create_app(settings_override: Settings | None = None) -> FastAPI:
             create_all()
         db = SessionLocal()
         try:
-            from app.bootstrap import bootstrap
+            from app.bootstrap import bootstrap, seed_demo_account
             info = bootstrap(db)
+            demo = seed_demo_account(db, settings)
             db.commit()
-            log.info("bootstrap %s", info)
+            app.state.demo_login = demo
+            log.info("bootstrap %s demo=%s", info, demo)
         except Exception:
             db.rollback()
             log.exception("bootstrap failed (app still starts; check DB migrations)")
@@ -76,7 +79,7 @@ def create_app(settings_override: Settings | None = None) -> FastAPI:
         # 2. CSRF double-submit on state-changing API requests.
         if (request.method in ("POST", "PUT", "PATCH", "DELETE")
                 and path.startswith(API_PREFIX) and path not in CSRF_EXEMPT):
-            data = get_signer_for(settings).read(request.cookies.get(SESSION_COOKIE, ""))
+            data = get_signer_for(settings).read(extract_session_token(request))
             token = request.headers.get("X-CSRF-Token", "")
             if data is None or not constant_time_equal(token, data.csrf):
                 return JSONResponse(status_code=403, content={"ok": False, "error": {
@@ -91,7 +94,7 @@ def create_app(settings_override: Settings | None = None) -> FastAPI:
         return response
 
     for module in (auth, system, profile, data, planner, chat, memory, agents_api,
-                   skills, fitness, channels):
+                   skills, fitness, channels, providers):
         app.include_router(module.router, prefix=API_PREFIX)
     app.include_router(routes.router)
 
