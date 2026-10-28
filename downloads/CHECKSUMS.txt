@@ -17,5 +17,5 @@ built from this commit and tested from a clean folder. An antivirus warning is
 then a heuristic false positive, not a modified file - see docs/ANTIVIRUS.md for
 the evidence and for how to report the false positive.
 
-fe1dc08de3444632ca50e23145332d805cf3d9d1bcb891bcad0d091423078c23  romka-v0.2.5.zip  (263,042 bytes)
-438c2b3e90f6c8cba322db9633dac568739da717244356ee01d31ceb19b0122a  romka-v0.2.5-core.zip  (247,273 bytes)
+4e6f811c767bc54e16ab1d2ed57184f6c35f80a1d8d0c1444b4bce516a9182af  romka-v0.2.6.zip  (265,528 bytes)
+4ed23a07c48646916d7c8d0fa546276d67ece239d56b50fd4035fa83801f6130  romka-v0.2.6-core.zip  (249,759 bytes)

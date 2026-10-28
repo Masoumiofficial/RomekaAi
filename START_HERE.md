@@ -1,4 +1,4 @@
-# START HERE — ROMKA v0.2.5
+# START HERE — ROMKA v0.2.6
 
 این بسته، نسخهٔ کامل و قابل اجرای ROMKA روی سیستم خودتان است. هیچ کلید API و هیچ
 توکنی داخل بسته نیست؛ همهٔ فایل‌های حساس (`romka.db`، `.env`، `.romka_dev_secret`)
@@ -11,14 +11,31 @@
 پیش‌نیاز: **Python 3.11 یا 3.12** از <https://www.python.org/downloads/windows/>
 (در نصب، تیک `Add python.exe to PATH` را بزنید).
 
-1. آرشیو را در درایو `C:\` خارج کنید؛ خودِ zip یک پوشهٔ `romka` می‌سازد
-   (`Expand-Archive romka-v0.2.5.zip -DestinationPath C:\`) — مسیر با فاصله و حروف
-   فارسی نباشد.
-2. در PowerShell داخل همان پوشه اجرا کنید:
+1. در پوشه‌ای که zip را دانلود کرده‌اید (معمولاً `Downloads`) این دو خط را اجرا کنید؛
+   خودِ zip یک پوشهٔ `romka` در `C:\` می‌سازد — مسیر با فاصله و حروف فارسی نباشد.
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+Get-ChildItem *.zip | Unblock-File
+Get-ChildItem *.zip | Expand-Archive -DestinationPath C:\
+```
+
+   > `Unblock-File` برچسب «از اینترنت دانلود شده» را برمی‌دارد، پس نیازی به شل‌کردن
+   > سیاست اجرای PowerShell نیست: اسکریپت‌های محلی با سیاست پیش‌فرض ویندوز
+   > (`RemoteSigned`) اجرا می‌شوند. کمتر کردن سطح دسترسی هم امن‌تر است و هم
+   > هشدار آنتی‌ویروس را کم می‌کند.
+
+2. در PowerShell داخل `C:\romka`:
+
+```powershell
+cd C:\romka
 .\scripts\setup.ps1
+```
+
+   اگر ویندوز گفت `running scripts is disabled on this system`، اسکریپت را با
+   سیاست محدودتر و **بدون** تغییر دائمی تنظیمات اجرا کنید:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy RemoteSigned -File .\scripts\setup.ps1
 ```
 
 3. سپس برنامه را اجرا کنید:
@@ -58,7 +75,7 @@ unzip romka-v0.2.0.zip -d romka && cd romka
 # لینوکس:  ./scripts/setup.sh --test-only   یا:  . .venv/bin/activate && pytest -q
 ```
 
-انتظار: **۱۵۳ تست عبور می‌کند** (بدون هیچ سرویس خارجی و بدون کلید API).
+انتظار: **۱۵۴ تست عبور می‌کند** (بدون هیچ سرویس خارجی و بدون کلید API).
 
 سالم‌بودن سرور: <http://127.0.0.1:8000/api/v1/health> باید `{"ok": true}` بدهد.
 
@@ -142,15 +159,15 @@ export GAPGPT_API_KEY="کلید-شما"
 
 1. **هش را بررسی کنید** (فایل `.sha256` کنار آرشیو):
    ```powershell
-   Get-FileHash .\romka-v0.2.5.zip -Algorithm SHA256
-   Get-Content .\romka-v0.2.5.zip.sha256
+   Get-FileHash .\romka-v0.2.6.zip -Algorithm SHA256
+   Get-Content .\romka-v0.2.6.zip.sha256
    ```
 2. **نسخهٔ Core را بگیرید** — بدون `doctor.py`، بدون `verify_provider.py`، بدون `deploy/`:
-   `downloads/romka-v0.2.5-core.zip` (همهٔ قابلیت‌های اصلی را دارد؛ فقط پورت را خودش
+   `downloads/romka-v0.2.6-core.zip` (همهٔ قابلیت‌های اصلی را دارد؛ فقط پورت را خودش
    آزاد نمی‌کند و اگر اشغال باشد با پیام روشن متوقف می‌شود).
 3. **بهترین راه:** خودتان از منبع بسازید — `git clone` و بعد
    `python scripts/build_release.py --sha256-file`؛ هش باید یکی باشد.
-4. برچسب اینترنت را بعد از تأیید هش بردارید: `Unblock-File .\romka-v0.2.5.zip`
+4. برچسب اینترنت را بعد از تأیید هش بردارید: `Unblock-File .\romka-v0.2.6.zip`
 5. گزارش مثبت کاذب: <https://www.microsoft.com/en-us/wdsi/filesubmission>
 
 جزئیات کامل و روش گزارش به هر سازنده: [`docs/ANTIVIRUS.md`](docs/ANTIVIRUS.md)
@@ -227,11 +244,11 @@ curl.exe -i http://127.0.0.1:8000/api/v1/health
 | خطا | راه‌حل |
 |---|---|
 | `python` شناخته نمی‌شود | Python را با گزینهٔ «Add to PATH» نصب کنید یا `py -3.11 scripts\...` |
-| `Activate.ps1 cannot be loaded` | `Set-ExecutionPolicy -Scope Process Bypass` |
+| `Activate.ps1 cannot be loaded` / `running scripts is disabled` | `Get-ChildItem *.zip \| Unblock-File` و سپس `powershell -NoProfile -ExecutionPolicy RemoteSigned -File .\scripts\setup.ps1` |
 | `Port 8000 already in use` | `.\scripts\run_dev.ps1 -Port 8010` (یا `PORT=8010 ./scripts/run_dev.sh`) |
 | صفحهٔ `Error code: 404 / File not found / Nothing matches the given URI` | سرور دیگری روی پورت است؛ `run_dev.ps1 -FreePort` (پورت را آزاد می‌کند) یا `run_dev.ps1 -Port 8010` |
-| `The '<' operator is reserved for future use` | جای `<PID>` عدد بگذارید، یا بهتر: `run_dev.ps1 -FreePort` را اجرا کنید |
+| `The '<' operator is reserved for future use` | `run_dev.ps1 -FreePort` را اجرا کنید (خودش پروسهٔ مزاحم را می‌بندد) یا `run_dev.ps1 -Port 8010` |
 | `no such table` | `alembic upgrade head` را اجرا کنید (اسکریپت setup خودش انجام می‌دهد) |
 | ورود دمو ناموفق | مطمئن شوید `ROMKA_AUTO_DEMO=true` و `ENVIRONMENT=development` است |
 
-نسخه: `0.2.5` · همهٔ ۱۵۳ تست در زمان ساخت این بسته روی محتوای همین zip اجرا شد.
+نسخه: `0.2.6` · همهٔ ۱۵۴ تست در زمان ساخت این بسته روی محتوای همین zip اجرا شد.

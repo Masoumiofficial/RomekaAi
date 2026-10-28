@@ -255,3 +255,25 @@ def test_published_archives_are_the_current_version():
     from app import __version__ as code_version
     for zip_path in (Path(build_release.ROOT) / "downloads").glob("*.zip"):
         assert code_version in zip_path.name, f"{zip_path.name} is not v{code_version}"
+
+
+def test_shipped_docs_never_ask_the_user_to_weaken_execution_policy():
+    """Telling users to switch the PowerShell policy off is bad practice *and* a
+    detection magnet.
+
+    Defender flagged ``START_HERE.md`` itself (the docs, not code). We cannot
+    diagnose their scanner from here, so we remove the one pattern in our text
+    that genuinely looks like malware: telling users to switch the PowerShell
+    execution policy off. ``Unblock-File`` removes the downloaded-file mark and
+    keeps RemoteSigned in force.
+    """
+    policy = re.compile(r"ExecutionPolicy[^\n]{0,40}Bypass")
+    offenders = []
+    for path in list(build_release.ROOT.glob("*.md")) + \
+            list((build_release.ROOT / "docs").rglob("*.md")) + \
+            list((build_release.ROOT / "scripts").glob("*.*")):
+        if path.suffix not in {".md", ".ps1", ".sh"}:
+            continue
+        for match in policy.finditer(path.read_text(encoding="utf-8", errors="ignore")):
+            offenders.append(f"{path.name}: {match.group(0)[:60]}")
+    assert not offenders, offenders
