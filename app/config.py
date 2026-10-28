@@ -25,11 +25,14 @@ class Settings(BaseSettings):
     SECRET_KEY: str = ""
     DATABASE_URL: str = "sqlite:///./romka.db"
     COOKIE_SECURE: bool = False
+    # auto = SameSite=None; Secure; Partitioned on HTTPS (embedded preview),
+    #        SameSite=Lax on plain HTTP (local dev). Override with lax/strict/none.
+    COOKIE_SAMESITE: str = "auto"
     SESSION_MAX_AGE_SECONDS: int = 604800
     RATE_LIMIT_PER_MINUTE: int = 90
 
     # AI provider layer
-    AI_PRIMARY_PROVIDER: str = "local"
+    AI_PRIMARY_PROVIDER: str = "local"       # local | openai_compatible | gapgpt
     AI_PRIMARY_BASE_URL: str = ""
     AI_PRIMARY_API_KEY: str = ""
     AI_PRIMARY_MODEL: str = "romka-local-v1"
@@ -38,6 +41,14 @@ class Settings(BaseSettings):
     AI_FALLBACK_API_KEY: str = ""
     AI_FALLBACK_MODEL: str = ""
     AI_ALLOW_FALLBACK: bool = False
+    # GapGPT preset — docs verified 2026-10-28:
+    # https://gapgpt.app/platform-v2/docs/quickstart  (OpenAI-compatible /v1)
+    GAPGPT_BASE_URL: str = "https://api.gapgpt.app/v1"
+    GAPGPT_DEFAULT_MODEL: str = "gpt-4o-mini"
+    # GapGPT prices are in IRR; operators must set their own USD estimate for
+    # accurate budget caps. 0 = use the built-in conservative price table.
+    AI_PRIMARY_PRICE_PER_MILLION_USD: float = 0.0
+    AI_FALLBACK_PRICE_PER_MILLION_USD: float = 0.0
     AI_DAILY_BUDGET_USD: float = 1.0
     AI_MONTHLY_BUDGET_USD: float = 20.0
     AI_MAX_RETRIES: int = 1
@@ -54,7 +65,11 @@ class Settings(BaseSettings):
     BALE_WEBHOOK_SECRET: str = ""
     BALE_API_BASE_URL: str = "https://tapi.bale.ai"
 
+    # Dev-only demo account. Disabled in production by ROMKA_AUTO_DEMO=false.
     ROMKA_AUTO_DEMO: bool = True
+    ROMKA_DEMO_EMAIL: str = "demo@romka.local"
+    ROMKA_DEMO_PASSWORD: str = "RomkaDemo2026!"
+    ROMKA_DEMO_SEED_DATA: bool = True
 
     @property
     def is_production(self) -> bool:
@@ -90,6 +105,12 @@ class Settings(BaseSettings):
             out.append("SQLite in production — use PostgreSQL for concurrency and backups.")
         if self.AI_PRIMARY_PROVIDER == "local":
             out.append("AI provider is the offline deterministic engine (not a hosted LLM).")
+        elif not self.AI_PRIMARY_API_KEY:
+            out.append(f"{self.AI_PRIMARY_PROVIDER} selected but AI_PRIMARY_API_KEY is empty — offline local engine is active.")
+        else:
+            out.append("External provider has a key but is NOT live-verified in this process (POST /api/v1/providers/verify).")
+        if self.ROMKA_AUTO_DEMO and not self.is_production and self.ENVIRONMENT != "testing":
+            out.append(f"DEV demo account is active ({self.ROMKA_DEMO_EMAIL}) — never expose this instance publicly.")
         if not self.TELEGRAM_BOT_TOKEN:
             out.append("Telegram channel disabled (no token configured).")
         if not self.BALE_BOT_TOKEN:

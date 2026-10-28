@@ -2,9 +2,10 @@
 
 - local: offline deterministic responder. No key, no network, fully testable.
 - openai_compatible: real /chat/completions HTTP adapter. Untested against a live
-  paid endpoint in this workspace because no credentials are present. Any
-  OpenAI-compatible gateway (including GapGPT-style gateways) can be configured;
-  this must be verified with the operator's own credentials before use.
+  paid endpoint in this workspace because no credentials are present.
+- gapgpt: the same adapter with verified defaults for GapGPT's OpenAI-compatible
+  gateway (https://api.gapgpt.app/v1, docs/quickstart fetched 2026-10-28).
+  Documentation is verified; LIVE connectivity is not (no API key in workspace).
 - Native Claude / Gemini adapters are NOT implemented. See docs/AI-PROVIDERS.md.
 """
 from __future__ import annotations
@@ -24,8 +25,11 @@ log = logging.getLogger("romka.ai.providers")
 # Operators should override these in Settings for their actual contract.
 PRICE_TABLE: dict[str, float] = {
     "gpt-4o-mini": 0.60, "gpt-4o": 6.25, "gpt-4.1-mini": 0.80,
-    "gemini-1.5-flash": 0.30, "claude-3-5-haiku": 1.60, "default": 1.0,
+    "gemini-1.5-flash": 0.30, "gemini-2.5-flash": 0.60, "gemini-2.5-pro": 3.50,
+    "claude-3-5-haiku": 1.60, "default": 1.0,
 }
+GAPGPT_DEFAULT_BASE_URL = "https://api.gapgpt.app/v1"
+GAPGPT_DOCS_URL = "https://gapgpt.app/platform-v2/docs/quickstart"
 
 
 def _approx_tokens(text: str) -> int:
@@ -230,3 +234,25 @@ class OpenAICompatibleProvider(BaseProvider):
                     continue
                 if delta:
                     yield delta
+
+
+class GapGPTProvider(OpenAICompatibleProvider):
+    """GapGPT preset: verified OpenAI-compatible base URL and header shape.
+
+    Evidence (quickstart page, fetched 2026-10-28): ``OpenAI(base_url=
+    'https://api.gapgpt.app/v1', api_key=...)`` plus ``chat.completions.create``
+    with model names such as ``gpt-4o`` / ``gemini-2.5-pro``. An alternative CDN
+    base is ``https://api.gapapi.com/v1``. Model availability and IRR prices are
+    account-specific: see /models, /pricing and /usage in the GapGPT panel.
+    This class only changes defaults and reporting — the HTTP contract is the
+    already-tested OpenAICompatibleProvider, not a new unverified client.
+    """
+    name = "gapgpt"
+    is_external = True
+
+    def __init__(self, *, base_url: str = "", api_key: str, model: str = "",
+                 timeout: float = 30.0, price_per_million: float | None = None,
+                 client: httpx.Client | None = None) -> None:
+        super().__init__(base_url=base_url or GAPGPT_DEFAULT_BASE_URL, api_key=api_key,
+                         model=model or "gpt-4o-mini", timeout=timeout,
+                         price_per_million=price_per_million, client=client)

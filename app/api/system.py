@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,20 @@ from app.skills.registry import skill_registry
 
 router = APIRouter(tags=["system"])
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
+
+
+def _demo_status(settings: Settings, request: Request) -> dict:
+    """Public, non-secret: is a demo account actually usable here?"""
+    if settings.is_production or not settings.ROMKA_AUTO_DEMO:
+        return {"enabled": False, "ready": False}
+    state = getattr(request.app.state, "demo_login", None) or {}
+    out = {"enabled": True, "ready": bool(state.get("ready")),
+           "email": settings.ROMKA_DEMO_EMAIL,
+           "note": "DEV-only account; the password is never returned by the API."}
+    if state.get("reason"):
+        out["reason"] = state["reason"]
+    return out
 
 
 @router.get("/health")
@@ -35,9 +48,10 @@ def health(db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/status")
-def status(settings: Settings = Depends(get_settings),
+def status(request: Request, settings: Settings = Depends(get_settings),
            db: Session = Depends(get_db)) -> dict:
     router_ = AIRouter(db, user_id=None, settings=settings)
+    from app.ai.runtime_state import verification_state
     from app.channels.bale import BaleAdapter
     from app.channels.telegram import TelegramAdapter
     tg, bale = TelegramAdapter(settings), BaleAdapter(settings)
@@ -45,6 +59,8 @@ def status(settings: Settings = Depends(get_settings),
             "database": "sqlite" if settings.DATABASE_URL.startswith("sqlite") else "postgresql",
             "runtime_warnings": settings.runtime_warnings(),
             "providers": router_.configured_status(),
+            "provider_verification": verification_state(),
+            "demo_login": _demo_status(settings, request),
             "channels": {
                 "telegram": {"configured": tg.available,
                              "verified_live": False,

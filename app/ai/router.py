@@ -19,7 +19,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.ai.base import BaseProvider, ChatRequest, ChatResult, ProviderError
-from app.ai.providers import LocalDeterministicProvider, OpenAICompatibleProvider
+from app.ai.providers import (GAPGPT_DOCS_URL, GapGPTProvider,
+                              LocalDeterministicProvider, OpenAICompatibleProvider)
+from app.ai.runtime_state import verification_state
 from app.config import Settings, get_settings
 from app.core.errors import BudgetExceeded, ProviderUnavailable
 from app.db.models import AIUsage
@@ -47,17 +49,39 @@ class AIRouter:
         self._recent_hashes: list[str] = []
         self.max_steps = max(1, self.settings.AI_MAX_AGENT_STEPS)
 
+    def _external(self, kind: str, base_url: str, api_key: str, model: str,
+                  price: float) -> BaseProvider | None:
+        """Build an external adapter only when a key is actually present.
+
+        An unusable provider must never become ``primary``: with no key the
+        offline engine stays active and the status endpoint says exactly why.
+        """
+        s = self.settings
+        override = price or None  # 0 = use provider's conservative price table
+        if kind == "gapgpt" and api_key:
+            return GapGPTProvider(
+                base_url=base_url or s.GAPGPT_BASE_URL, api_key=api_key,
+                model=model or s.GAPGPT_DEFAULT_MODEL,
+                timeout=s.AI_TIMEOUT_SECONDS, price_per_million=override)
+        if kind == "openai_compatible" and base_url and api_key:
+            return OpenAICompatibleProvider(
+                base_url=base_url, api_key=api_key, model=model,
+                timeout=s.AI_TIMEOUT_SECONDS, price_per_million=override)
+        return None
+
     def _default_providers(self) -> dict[str, BaseProvider]:
         out: dict[str, BaseProvider] = {"local": LocalDeterministicProvider()}
         s = self.settings
-        if s.AI_PRIMARY_PROVIDER == "openai_compatible" and s.AI_PRIMARY_BASE_URL and s.AI_PRIMARY_API_KEY:
-            out["primary"] = OpenAICompatibleProvider(
-                base_url=s.AI_PRIMARY_BASE_URL, api_key=s.AI_PRIMARY_API_KEY,
-                model=s.AI_PRIMARY_MODEL, timeout=s.AI_TIMEOUT_SECONDS)
-        if s.AI_FALLBACK_PROVIDER == "openai_compatible" and s.AI_FALLBACK_BASE_URL and s.AI_FALLBACK_API_KEY:
-            out["fallback"] = OpenAICompatibleProvider(
-                base_url=s.AI_FALLBACK_BASE_URL, api_key=s.AI_FALLBACK_API_KEY,
-                model=s.AI_FALLBACK_MODEL, timeout=s.AI_TIMEOUT_SECONDS)
+        primary = self._external(s.AI_PRIMARY_PROVIDER, s.AI_PRIMARY_BASE_URL,
+                                 s.AI_PRIMARY_API_KEY, s.AI_PRIMARY_MODEL,
+                                 s.AI_PRIMARY_PRICE_PER_MILLION_USD)
+        if primary is not None:
+            out["primary"] = primary
+        fallback = self._external(s.AI_FALLBACK_PROVIDER, s.AI_FALLBACK_BASE_URL,
+                                  s.AI_FALLBACK_API_KEY, s.AI_FALLBACK_MODEL,
+                                  s.AI_FALLBACK_PRICE_PER_MILLION_USD)
+        if fallback is not None:
+            out["fallback"] = fallback
         return out
 
     # ── providers ──
@@ -68,8 +92,34 @@ class AIRouter:
         return p
 
     def configured_status(self) -> list[dict]:
-        return [{"name": k, "available": v.available, "external": v.is_external,
-                 "model": getattr(v, "model", "")} for k, v in self.providers.items()]
+        s = self.settings
+        verified = verification_state()
+        items = []
+        for key, provider in self.providers.items():
+            external = provider.is_external
+            is_verified = bool(external and verified["verified_live"]
+                               and verified["provider"] == provider.name)
+            item = {"name": provider.name, "role": key, "available": provider.available,
+                    "external": external, "model": getattr(provider, "model", ""),
+                    "verified_live": is_verified}
+            if external:
+                item["base_url"] = getattr(provider, "base_url", "")  # never the key
+                if provider.name == "gapgpt":
+                    item["docs"] = GAPGPT_DOCS_URL
+            items.append(item)
+        if "primary" not in self.providers and s.AI_PRIMARY_PROVIDER in ("gapgpt", "openai_compatible"):
+            missing_key = not s.AI_PRIMARY_API_KEY
+            items.append({
+                "name": s.AI_PRIMARY_PROVIDER, "role": "primary_unconfigured",
+                "available": False, "external": True, "verified_live": False,
+                "model": s.AI_PRIMARY_MODEL if s.AI_PRIMARY_PROVIDER == "openai_compatible"
+                         else s.GAPGPT_DEFAULT_MODEL,
+                "base_url": s.AI_PRIMARY_BASE_URL or s.GAPGPT_BASE_URL,
+                "docs": GAPGPT_DOCS_URL if s.AI_PRIMARY_PROVIDER == "gapgpt" else "",
+                "reason": ("AI_PRIMARY_API_KEY خالی است؛ موتور محلی آفلاین فعال است."
+                           if missing_key else "پیکربندی ارائهدهنده ناقص است."),
+            })
+        return items
 
     # ── budget ──
     def _spent(self, since: datetime) -> float:

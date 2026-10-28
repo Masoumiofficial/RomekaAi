@@ -27,7 +27,9 @@
 </div>
 <div class="panel" id="panel-ai"><div class="grid g-2">
   <div class="card"><div class="card-h"><h2>ارائهدهندگان</h2></div><div id="provider-list" class="list"></div>
-    <p class="small faint" style="margin-top:12px">در حال حاضر فقط آداپتور محلی (بدون کلید) و آداپتور سازگار با OpenAI پیادهسازی شدهاند. Claude/Gemini بهصورت بومی پیادهسازی نشدهاند؛ وضعیت در <span class="mono">docs/AI-PROVIDERS.md</span> مستند است.</p></div>
+    <button class="btn sm" id="verify-provider" style="margin-top:12px">تست اتصال زنده (یک فراخوانی کمهزینه)</button>
+    <div id="provider-verify" class="small" style="margin-top:10px"></div>
+    <p class="small faint" style="margin-top:12px">آداپتور محلی، آداپتور OpenAI-compatible و پیشتنظیم GapGPT پیادهسازی شدهاند. Claude/Gemini بومی پیادهسازی نشدهاند. «تست اتصال» فقط با فشار صریح دکمه و با سقف هزینه انجام میشود؛ کلید API هرگز در پاسخ یا لاگ ظاهر نمیشود. جزئیات: <span class="mono">docs/AI-PROVIDERS.md</span>.</p></div>
   <div class="card"><div class="card-h"><h2>سقف مصرف</h2></div><div id="budget-box"></div></div>
 </div></div>
 <div class="panel" id="panel-skills">
