@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -173,8 +174,15 @@ def test_missing_env_is_only_a_warning(tmp_path, monkeypatch, capsys):
     assert "built-in defaults" in capsys.readouterr().out
 
 
+@pytest.mark.skipif(shutil.which("bash") is None,
+                    reason="POSIX wrapper; Windows uses scripts/run_dev.ps1 (covered by CI)")
 def test_run_dev_refuses_to_start_on_a_foreign_port(static_server):
-    """The shell wrapper must fail loudly instead of leaving a silent 404."""
+    """The shell wrapper must fail loudly instead of leaving a silent 404.
+
+    Windows has no bash, so subprocess raised FileNotFoundError and the assertion
+    read "not usable" in an empty stderr - a test bug, not a product bug. The
+    PowerShell equivalent is exercised by the Windows CI job.
+    """
     result = subprocess.run(["bash", "scripts/run_dev.sh"], capture_output=True, text=True,
                             cwd=doctor.ROOT,
                             env={"PATH": "/usr/bin:/bin:/usr/local/bin",
