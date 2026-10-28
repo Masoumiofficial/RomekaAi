@@ -2,6 +2,39 @@
 
 همهٔ نسخهها بر اساس [Keep a Changelog](https://keepachangelog.com/) و وضعیت واقعی تستها.
 
+## [0.2.9] — 2026-10-28 — «۳٫۱۴ و ویندوز: حالا اجرا می‌شوند، نه فرض»
+
+### Evidence (CI سبز، اجرا‌شده روی مخزن خود پروژه)
+`https://github.com/Masoumiofficial/RomekaAi/actions/runs/40669478197` — هر شش job:
+
+| job | نتیجه |
+|---|---|
+| linux · Python 3.11 / 3.12 / 3.13 / 3.14 | ✅ success (هر چهار) |
+| windows · Python 3.12 | ✅ success |
+| windows · Python 3.14 | ✅ success |
+
+job ویندوز **واقعاً** این‌ها را اجرا می‌کند: بررسی ASCII و پارس‌شدن تمام `.ps1`
+توسط پارسر PowerShell، اجرای `scripts\setup.ps1` (ساخت `.venv`، نصب وابستگی‌ها،
+`alembic upgrade head`)، اجرای کل تست‌ها در همان `.venv`، و بالا آوردن
+`run_dev.ps1` تا وقتی `/api/v1/health` جواب `ok` بدهد.
+
+### Added
+- ماتریس CI از `3.11/3.12` به `3.11/3.12/3.13/3.14` گسترش یافت.
+- job `windows` با `3.12` و `3.14` — دقیقاً همان محیطی که کاربران خطا می‌گیرند.
+- در صورت شکست، هر تست ناموفق به‌صورت annotation منتشر می‌شود (لاگ Actions از هر
+  جایی قابل دانلود نیست؛ annotation هست).
+
+### Fixed
+- `test_run_dev_refuses_to_start_on_a_foreign_port` روی ویندوز شکست می‌خورد چون
+  `scripts/run_dev.sh` را صدا می‌زد (و بعداً چون Git-for-Windows `bash` را روی PATH
+  دارد، شرط `shutil.which` هم کمکی نکرد). حالا بر اساس پلتفرم skip می‌شود؛ معادل
+  PowerShell آن با job ویندوز پوشش داده می‌شود.
+- راهنمای نصب: پیش‌نیاز از «۳٫۱۱ یا ۳٫۱۲» به «۳٫۱۱ تا ۳٫۱۴، هر چهار مورد در CI».
+
+### Verified
+- `pytest -q` → **۱۵۸ passed** (لینوکس ۳٫۱۱) · `ruff` پاک · ۶/۶ job سبز.
+- آرشیو Core در پوشهٔ خالی: `setup.sh` exit 0، **۱۳۴ passed / ۶ skipped**، سرور ۰٫۲٫۹.
+
 ## [0.2.8] — 2026-10-28 — «`Python 3.11+ not found` روی سیستمی که پایتون دارد»
 
 ### Fixed (دو باگ واقعی در `scripts/setup.ps1`)
