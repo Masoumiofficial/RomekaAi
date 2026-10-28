@@ -74,7 +74,7 @@ demo@romka.local / RomkaDemo2026!
 ## تستها
 
 ```bash
-pytest -q                                    # ۷۶ تست
+pytest -q                                    # ۹۹ تست
 pytest -q --cov=app --cov-report=term-missing
 pytest tests/test_planning.py -q             # فقط موتور برنامهسازی
 pytest -q -k "scenario"                      # سناریوهای پذیرش
