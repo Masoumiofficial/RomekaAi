@@ -25,7 +25,9 @@
 ## کنترلهای پیادهسازیشده
 
 - **رمز عبور:** `pbkdf2_sha256$260000$<salt>$<digest>`، salt تصادفی ۱۶ بایت، مقایسه ثابتزمان.
-- **نشست:** `URLSafeTimedSerializer`، `HttpOnly`, `SameSite=Lax`, `Secure` در production،
+- **نشست:** `URLSafeTimedSerializer`، `HttpOnly`، `SameSite=Lax` (روی HTTPS و در حالت
+  `COOKIE_SAMESITE=auto` به `None; Secure` تبدیل می‌شود تا پیش‌نمایش iframe کار کند)،
+  `Secure` در production،
   حداکثر عمر ۷ روز قابل تنظیم. SECRET_KEY خالی در production → **خطا و توقف startup**.
 - **CSRF:** تمام `POST/PUT/PATCH/DELETE` زیر `/api/v1` بهجز ثبتنام/ورود/مهمان/وبحوکها.
 - **اعتبارسنجی:** Pydantic v2 در همهٔ ورودیها؛ محدودیت طول پیام ۸۰۰۰ کاراکتر.
