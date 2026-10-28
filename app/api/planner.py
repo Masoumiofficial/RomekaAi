@@ -13,6 +13,7 @@ from app.core.timeutil import local_minute_to_utc, today_in
 from app.db.models import FixedEvent, Plan, Task, UserProfile
 from app.db.session import get_db
 from app.planning.engine import expand_recurrence, light_day_plan
+from app.planning.review import calibration, daily_review, weekly_load
 from app.planning.service import (
     complete_task, generate, load_fixed, load_tasks, constraints_from_profile,
     parse_natural_request,
@@ -56,6 +57,8 @@ class EventIn(BaseModel):
 class GenerateIn(BaseModel):
     date: str | None = None
     energy_mode: str = Field(default="normal", pattern="^(normal|low)$")
+    # Set false to see the raw estimates without the measured correction.
+    apply_calibration: bool = True
 
 
 class ReplanIn(BaseModel):
@@ -75,6 +78,7 @@ class IntakeIn(BaseModel):
 
 def _task(row: Task) -> dict:
     return {"id": row.id, "title": row.title, "duration_min": row.duration_min,
+            "actual_min": row.actual_min,
             "priority": row.priority, "energy": row.energy, "kind": row.kind,
             "project_id": row.project_id, "status": row.status,
             "depends_on": row.depends_on, "must_do": row.must_do,
@@ -119,14 +123,50 @@ def delete_task(task_id: int, ctx: AuthContext = Depends(get_auth_context),
     return {"ok": True}
 
 
+class CompleteIn(BaseModel):
+    actual_minutes: int | None = Field(default=None, ge=1, le=1440,
+                                       description="مدت واقعی انجام کار، برای کالیبراسیون")
+    note: str = Field(default="", max_length=400)
+
+
 @router.post("/tasks/{task_id}/complete")
-def finish_task(task_id: int, payload: dict | None = None,
+def finish_task(task_id: int, payload: CompleteIn | None = None,
                 ctx: AuthContext = Depends(get_auth_context),
                 db: Session = Depends(get_db)) -> dict:
-    payload = payload or {}
+    """Complete a task and optionally record the REAL duration.
+
+    The estimate is preserved, so the response shows both numbers and the
+    calibration state — no silent rewriting of history.
+    """
+    payload = payload or CompleteIn()
     row = complete_task(db, user_id=ctx.user.id, task_id=task_id,
-                        actual_minutes=payload.get("actual_minutes"))
-    return {"ok": True, "item": _task(row)}
+                        actual_minutes=payload.actual_minutes, note=payload.note,
+                        day=today_in(ctx.user.timezone))
+    return {"ok": True, "item": _task(row), "calibration": calibration(db, ctx.user.id)}
+
+
+@router.get("/review")
+def review(day: str | None = Query(default=None),
+           mode: str = Query(default="night", pattern="^(morning|night)$"),
+           ctx: AuthContext = Depends(get_auth_context),
+           db: Session = Depends(get_db)) -> dict:
+    """Morning preview / evening review built only from stored rows."""
+    return daily_review(db, user_id=ctx.user.id, day=_day(day, ctx.user.timezone), mode=mode)
+
+
+@router.get("/week")
+def week(day: str | None = Query(default=None), days: int = Query(default=7, ge=3, le=31),
+         ctx: AuthContext = Depends(get_auth_context),
+         db: Session = Depends(get_db)) -> dict:
+    """Real loads for the last N days (empty days mean 'nothing recorded')."""
+    return weekly_load(db, user_id=ctx.user.id, end_day=_day(day, ctx.user.timezone), days=days)
+
+
+@router.get("/calibration")
+def calibration_state(ctx: AuthContext = Depends(get_auth_context),
+                      db: Session = Depends(get_db)) -> dict:
+    """Is the estimate correction active, and on how much evidence?"""
+    return {"ok": True, "calibration": calibration(db, ctx.user.id)}
 
 
 @router.get("/events")
@@ -169,7 +209,8 @@ def generate_plan(p: GenerateIn, ctx: AuthContext = Depends(get_auth_context),
     d = _day(p.date, ctx.user.timezone)
     profile = db.query(UserProfile).filter(UserProfile.user_id == ctx.user.id).first()
     result = generate(db, user_id=ctx.user.id, day=d, profile=profile,
-                      energy_mode=p.energy_mode, tz_name=ctx.user.timezone)
+                      energy_mode=p.energy_mode, tz_name=ctx.user.timezone,
+                      apply_calibration=p.apply_calibration)
     return {"ok": True, "plan": result}
 
 

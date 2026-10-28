@@ -11,7 +11,7 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from app.core.errors import NotFound
+from app.core.errors import NotFound, ValidationFailed
 from app.core.timeutil import utc_to_local_minute
 from app.db.base import utcnow
 from app.db.models import FixedEvent, Plan, PlanBlock, Task, UserProfile
@@ -137,14 +137,21 @@ def constraints_from_profile(profile: UserProfile | None, day: date, *,
     )
 
 
-def load_tasks(db: Session, user_id: int, day: date, tz_name: str = "UTC") -> list[TaskSpec]:
+def load_tasks(db: Session, user_id: int, day: date, tz_name: str = "UTC",
+               calibration_ratio: float = 1.0) -> list[TaskSpec]:
+    """Task rows -> engine specs.
+
+    ``calibration_ratio`` comes from measured history (see planning.review) and
+    only ever scales *future* estimates; stored ``duration_min`` is untouched.
+    """
     rows = (db.query(Task).filter(Task.user_id == user_id, Task.status != "done")
             .order_by(Task.priority, Task.created_at).all())
     out = []
     for r in rows:
+        planned_min = max(5, int(round(r.duration_min * calibration_ratio)))
         deadline_min = utc_to_local_minute(r.deadline, day, tz_name)
         out.append(TaskSpec(
-            id=str(r.id), title=r.title, duration_min=r.duration_min, priority=r.priority,
+            id=str(r.id), title=r.title, duration_min=planned_min, priority=r.priority,
             energy=r.energy, depends_on=[str(x) for x in (r.depends_on or [])],
             deadline_min=deadline_min, earliest_start_min=r.earliest_start_min,
             latest_end_min=r.latest_end_min, must_do=r.must_do, deferrable=r.deferrable,
@@ -187,8 +194,15 @@ def generate(db: Session, *, user_id: int, day: date, profile: UserProfile | Non
              completed_task_ids: list[str] | None = None,
              extra_tasks: list[dict] | None = None,
              extra_fixed: list[dict] | None = None,
-             persist: bool = True, tz_name: str = "UTC") -> dict:
-    tasks = load_tasks(db, user_id, day, tz_name)
+             persist: bool = True, tz_name: str = "UTC",
+             apply_calibration: bool = True) -> dict:
+    from app.planning.review import calibration
+    calib = calibration(db, user_id)
+    ratio = calib["ratio"] if (apply_calibration and calib["applied"]) else 1.0
+    if not apply_calibration:
+        calib = {**calib, "applied": False, "ratio": 1.0,
+                 "note": "کالیبراسیون برای این محاسبه غیرفعال است."}
+    tasks = load_tasks(db, user_id, day, tz_name, calibration_ratio=ratio)
     for i, t in enumerate(extra_tasks or []):
         tasks.append(TaskSpec(id=t.get("id", f"tmp-{i}"), title=t["title"],
                               duration_min=int(t.get("duration_min", 60)),
@@ -213,6 +227,7 @@ def generate(db: Session, *, user_id: int, day: date, profile: UserProfile | Non
     else:
         result = build_plan(tasks, fixed, c)
     result["plan_id"] = None
+    result["calibration"] = {**calib, "applied_ratio": ratio}
     if persist:
         plan = persist_plan(db, user_id=user_id, day=day, result=result, energy_mode=energy_mode)
         result["plan_id"] = plan.id
@@ -220,13 +235,23 @@ def generate(db: Session, *, user_id: int, day: date, profile: UserProfile | Non
 
 
 def complete_task(db: Session, *, user_id: int, task_id: int,
-                  actual_minutes: int | None = None, note: str = "") -> Task:
+                  actual_minutes: int | None = None, note: str = "",
+                  day: date | None = None) -> Task:
+    """Mark done. The estimate is preserved; real minutes go to ``actual_min``.
+
+    Earlier versions overwrote ``duration_min`` with the actual value, which made
+    calibration impossible (the estimate disappeared). Both are kept now.
+    """
     task = db.query(Task).filter(Task.id == task_id, Task.user_id == user_id).first()
     if task is None:
         raise NotFound("وظیفه پیدا نشد.")
     task.status = "done"
     task.completed_at = utcnow()
-    if actual_minutes and actual_minutes > 0:
-        task.duration_min = actual_minutes
+    if actual_minutes is not None:
+        if not 1 <= actual_minutes <= 1440:
+            raise ValidationFailed("مدت واقعی باید بین ۱ و ۱۴۴۰ دقیقه باشد.")
+        task.actual_min = actual_minutes
+    if task.planned_for is None and day is not None:
+        task.planned_for = day  # ad-hoc work still belongs to the day it happened
     db.flush()
     return task

@@ -85,7 +85,10 @@ class Task(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
     title: Mapped[str] = mapped_column(String(400), nullable=False)
+    # duration_min is the ESTIMATE and is never overwritten by reality;
+    # actual_min is what really happened (used for calibration).
     duration_min: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
+    actual_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     priority: Mapped[int] = mapped_column(Integer, default=3, nullable=False)  # 1 = highest
     energy: Mapped[str] = mapped_column(String(10), default="medium", nullable=False)
     kind: Mapped[str] = mapped_column(String(20), default="focus", nullable=False)
