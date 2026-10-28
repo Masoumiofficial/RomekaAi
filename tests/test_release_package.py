@@ -78,7 +78,7 @@ def test_archive_is_a_valid_non_empty_zip(archive):
     "scripts/run_dev.ps1", "scripts/run_dev.sh", "scripts/verify_provider.py", "scripts/doctor.py",
     "scripts/build_release.py", "tests/conftest.py", "docs/STATUS.md",
     "docs/AI-PROVIDERS.md", "docs/DEPLOYMENT.md", "docs/ANTIVIRUS.md",
-    "deploy/nginx/romka.conf",
+    "docs/TROUBLESHOOTING.md", "deploy/nginx/romka.conf",
 ])
 def test_archive_contains_what_a_fresh_install_needs(archive, required):
     names = _names(archive)
@@ -277,3 +277,27 @@ def test_shipped_docs_never_ask_the_user_to_weaken_execution_policy():
         for match in policy.finditer(path.read_text(encoding="utf-8", errors="ignore")):
             offenders.append(f"{path.name}: {match.group(0)[:60]}")
     assert not offenders, offenders
+
+
+def test_start_here_stays_a_clean_quick_start():
+    """Defender flagged START_HERE.md itself (Trojan:Script/Sabsik.FL.A!ml).
+
+    A quick-start file should be short and free of process-killing commands; the
+    diagnosis material lives in docs/TROUBLESHOOTING.md, which is where the
+    'kill the port owner' instructions belong.
+    """
+    text = (build_release.ROOT / "START_HERE.md").read_text(encoding="utf-8")
+    assert len(text.splitlines()) < 160, "START_HERE.md is drifting back into a manual"
+    assert "docs/TROUBLESHOOTING.md" in text
+    assert "docs/ANTIVIRUS.md" in text
+    for scary in ("taskkill", "Stop-Process", "Get-NetTCPConnection", "ExecutionPolicy",
+                  "netstat", "kill -9"):
+        assert scary not in text, f"{scary} belongs in docs/TROUBLESHOOTING.md"
+
+
+def test_troubleshooting_keeps_the_hard_won_lessons():
+    text = (build_release.ROOT / "docs" / "TROUBLESHOOTING.md").read_text(encoding="utf-8")
+    assert "$ownerPid" in text                      # $PID is read-only in PowerShell
+    assert "operator is reserved" in text           # the '<' placeholder trap
+    assert "-FreePort" in text
+    assert "server: uvicorn" in text                # how to tell whose 404 this is

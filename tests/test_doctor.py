@@ -263,10 +263,15 @@ def test_windows_scripts_never_tell_the_user_to_type_an_angle_bracket_placeholde
         text = (doctor.ROOT / "scripts" / name).read_text(encoding="utf-8")
         assert "taskkill /PID <PID>" not in text
         assert "/PID <" not in text
+    # The port/PID guidance moved to docs/TROUBLESHOOTING.md so that START_HERE.md
+    # stays a short quick start (Defender flagged that file). Keep it there.
     start_here = (doctor.ROOT / "START_HERE.md").read_text(encoding="utf-8")
-    assert "run_dev.ps1 -FreePort" in start_here
-    assert "$ownerPid" in start_here
-    assert "operator is reserved" in start_here
+    assert "docs/TROUBLESHOOTING.md" in start_here
+    assert "/PID <" not in start_here
+    guide = (doctor.ROOT / "docs" / "TROUBLESHOOTING.md").read_text(encoding="utf-8")
+    assert "run_dev.ps1 -FreePort" in guide
+    assert "$ownerPid" in guide
+    assert "operator is reserved" in guide
 
 
 def test_windows_start_script_checks_the_port_before_starting():
