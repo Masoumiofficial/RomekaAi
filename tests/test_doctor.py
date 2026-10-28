@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import socket
 import subprocess
 import sys
@@ -174,14 +173,15 @@ def test_missing_env_is_only_a_warning(tmp_path, monkeypatch, capsys):
     assert "built-in defaults" in capsys.readouterr().out
 
 
-@pytest.mark.skipif(shutil.which("bash") is None,
-                    reason="POSIX wrapper; Windows uses scripts/run_dev.ps1 (covered by CI)")
+@pytest.mark.skipif(sys.platform == "win32",
+                    reason="asserts POSIX bash behaviour; the PowerShell wrapper is covered by Windows CI")
 def test_run_dev_refuses_to_start_on_a_foreign_port(static_server):
     """The shell wrapper must fail loudly instead of leaving a silent 404.
 
-    Windows has no bash, so subprocess raised FileNotFoundError and the assertion
-    read "not usable" in an empty stderr - a test bug, not a product bug. The
-    PowerShell equivalent is exercised by the Windows CI job.
+    Skipped on Windows: GitHub's Windows runners do ship Git-for-Windows bash, so
+    the test ran the POSIX script with a POSIX-only PATH ('/usr/bin:/bin') and got
+    empty stderr. The assertion describes run_dev.sh, not run_dev.ps1 - the
+    PowerShell wrapper is exercised by the Windows CI job instead.
     """
     result = subprocess.run(["bash", "scripts/run_dev.sh"], capture_output=True, text=True,
                             cwd=doctor.ROOT,
