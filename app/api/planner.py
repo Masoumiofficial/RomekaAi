@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date
+from uuid import UUID
 import hashlib
 import hmac
 import json
@@ -17,8 +18,10 @@ from app.api.deps import AuthContext, get_auth_context
 from app.config import Settings, get_settings
 from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.core.timeutil import local_minute_to_utc, today_in
-from app.db.models import FixedEvent, Plan, Task, User, UserProfile
+from app.db.base import utcnow
+from app.db.models import ActionRecord, FixedEvent, Plan, Task, User, UserProfile
 from app.db.session import get_db
+from app.planning.day_draft import propose_day
 from app.planning.engine import expand_recurrence, light_day_plan
 from app.planning.review import calibration, daily_review, weekly_load
 from app.planning.service import (
@@ -327,6 +330,84 @@ def replan_day(p: ReplanIn, ctx: AuthContext = Depends(get_auth_context),
         tz_name=ctx.user.timezone,
     )
     return {"ok": True, "plan": result}
+
+
+class DayDraftParseIn(BaseModel):
+    text: str = Field(min_length=1, max_length=4000)
+
+
+class DayDraftTaskIn(BaseModel):
+    title: str = Field(min_length=1, max_length=400)
+    duration_min: int = Field(ge=5, le=720)
+
+
+class DayDraftEventIn(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+    start_min: int = Field(ge=0, le=1439)
+    end_min: int = Field(ge=1, le=1440)
+    category: str = Field(default="personal", pattern="^(meeting|workout|meal|commute|personal)$")
+
+
+class DayDraftCommitIn(BaseModel):
+    date: date
+    request_id: UUID
+    tasks: list[DayDraftTaskIn] = Field(default_factory=list, max_length=20)
+    events: list[DayDraftEventIn] = Field(default_factory=list, max_length=20)
+
+
+@router.post("/day-draft/parse")
+def day_draft_parse(p: DayDraftParseIn, ctx: AuthContext = Depends(get_auth_context)) -> dict:
+    """Local heuristic only: do not store text, call a provider or change a plan."""
+    draft = propose_day(p.text)
+    return {"ok": True, **draft,
+            "suggested_date": None if draft["date_uncertain"] else today_in(ctx.user.timezone).isoformat()}
+
+
+@router.post("/day-draft/commit")
+def day_draft_commit(p: DayDraftCommitIn, ctx: AuthContext = Depends(get_auth_context),
+                     db: Session = Depends(get_db)) -> dict:
+    """Commit only explicitly submitted rows, atomically and safely retryable."""
+    if not p.tasks and not p.events:
+        raise ValidationFailed("حداقل یک مورد را انتخاب کنید.")
+    if len(p.tasks) + len(p.events) > 20:
+        raise ValidationFailed("حداکثر ۲۰ مورد در هر ثبت مجاز است.")
+    if any(not item.title.strip() for item in [*p.tasks, *p.events]):
+        raise ValidationFailed("عنوان هر مورد لازم است.")
+    if any(item.end_min <= item.start_min for item in p.events):
+        raise ValidationFailed("پایان هر تعهد باید بعد از شروع آن باشد.")
+    payload = p.model_dump(mode="json", exclude={"request_id"})
+    digest = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False,
+                                       separators=(",", ":")).encode()).hexdigest()
+    key = hashlib.sha256(f"day-draft:{ctx.user.id}:{p.request_id}".encode()).hexdigest()
+    # Serialize competing uses of the same request id; SQLite's no-op update
+    # takes its write lock, PostgreSQL locks the owner row.
+    if db.get_bind().dialect.name == "sqlite":
+        db.execute(update(User).where(User.id == ctx.user.id).values(is_active=User.is_active))
+    else:
+        db.query(User.id).filter(User.id == ctx.user.id).with_for_update().one()
+    existing = (db.query(ActionRecord).filter_by(user_id=ctx.user.id, tool="planner.day_draft",
+                                                idempotency_key=key).first())
+    if existing:
+        if existing.inputs.get("payload_sha256") != digest:
+            raise Conflict("این شناسه قبلاً با اطلاعات متفاوت ثبت شده است.")
+        return {"ok": True, **existing.result, "replayed": True}
+    tasks, events = [], []
+    for item in p.tasks:
+        row = Task(user_id=ctx.user.id, title=item.title.strip(), duration_min=item.duration_min,
+                   planned_for=p.date)
+        db.add(row); db.flush(); tasks.append(row.id)
+    for item in p.events:
+        row = FixedEvent(user_id=ctx.user.id, date=p.date, title=item.title.strip(),
+                         start_min=item.start_min, end_min=item.end_min,
+                         category=item.category, source="user")
+        db.add(row); db.flush(); events.append(row.id)
+    result = {"date": p.date.isoformat(), "task_ids": tasks, "event_ids": events}
+    db.add(ActionRecord(user_id=ctx.user.id, requester="day-draft", goal="ثبت موارد تأییدشده",
+                        tool="planner.day_draft", inputs={"payload_sha256": digest},
+                        risk_level="low", status="executed", result=result,
+                        idempotency_key=key, executed_at=utcnow()))
+    db.flush()
+    return {"ok": True, **result, "replayed": False}
 
 
 @router.post("/intake")

@@ -5,21 +5,21 @@
     <div class="card">
       <div class="card-h"><h2>ورودی طبیعی روز</h2><span class="hint">جمله بنویسید؛ وظایف و رویدادها استخراج می‌شوند</span></div>
       <div class="field"><textarea id="intake-text" placeholder="امروز باید روی انتشار گپینه کار کنم، نویدبان را بررسی کنم، یک جلسه کاری دارم، خرید کنم و ساعت شش باشگاه بروم."></textarea></div>
-      <div class="row"><button class="btn primary" id="intake-btn">ثبت و ساخت برنامه</button>
-        <button class="btn sm ghost" id="example-btn">نمونه نمونه روزانه</button>
-        <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="intake-save" checked style="width:auto"> ذخیره وظایف</label></div>
+      <div class="row"><button class="btn primary" id="intake-btn">بررسی پیشنهادها</button>
+        <button class="btn sm ghost" id="example-btn">نمونه روزانه</button>
+      </div><p class="xs faint">ابتدا پیشنهادها را بررسی کنید. فقط انتخاب‌های شما ثبت می‌شوند؛ برای تاریخ‌های متفاوت هر روز را جداگانه بررسی و ثبت کنید. ثبت موارد برنامه را فعال نمی‌کند.</p>
       <div id="intake-parsed" class="small muted" style="margin-top:10px"></div>
     </div>
     <div class="card">
       <div class="card-h"><h2>برنامه محاسبه‌شده</h2><div class="row">
-        <label for="plan-date" class="small">تاریخ شمسی</label><input type="text" id="plan-date" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۰۶" aria-describedby="plan-date-help" style="width:150px"><span id="plan-date-help" class="xs faint">سال/ماه/روز</span><button class="btn sm" id="gen-btn">ساخت</button>
-        <button class="btn sm ghost" id="low-btn">حالت کم‌انرژی</button></div></div>
+        <label for="plan-date" class="small">تاریخ شمسی</label><input type="text" id="plan-date" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۰۶" aria-describedby="plan-date-help" style="width:150px"><span id="plan-date-help" class="xs faint">سال/ماه/روز</span><button class="btn sm" id="gen-btn">پیش‌نمایش</button>
+        <button class="btn sm ghost" id="low-btn">پیش‌نمایش کم‌انرژی</button></div></div>
       <div id="plan-metrics" class="row" style="margin-bottom:12px"></div>
       <div id="plan-warnings"></div>
       <div class="timeline" id="plan-timeline"><div class="empty">برنامه‌ای وجود ندارد.</div></div>
       <div id="plan-deferred" class="small" style="margin-top:10px"></div>
       <div class="hr"></div>
-      <div class="card-h"><h2 class="small">بازبرنامه‌ریزی (بازتنظیم روز)</h2></div>
+      <div class="card-h"><h2 class="small">بازبرنامه‌ریزی مستقیم (روش قدیمی؛ برنامه را فوراً فعال می‌کند)</h2></div>
       <div class="grid-form">
         <div class="field"><label>شناسه رویداد ثابت</label><input id="rp-event" type="number" placeholder="مثلاً ۱"></div>
         <div class="field"><label>پایان جدید (دقیقه از نیمه‌شب)</label><input id="rp-end" type="number" placeholder="مثلاً ۹۰۰ یعنی ۱۵:۰۰"></div>

@@ -442,20 +442,25 @@
     });
     $("example-btn")?.addEventListener("click",()=>{ $("intake-text").value="امروز باید روی انتشار گپینه کار کنم، نویدبان را بررسی کنم، یک جلسه کاری دارم، خرید کنم و ساعت شش باشگاه بروم."; });
     loadWeek();
-    $("intake-btn")?.addEventListener("click",async()=>{
-      const t=$("intake-text").value.trim(); if(!t)return toast("متن وارد کنید.",true);
-      try { const r=await api("/planner/intake",{body:{text:t,date:selectedDay(),save:$("intake-save").checked}});
-        setHTML("intake-parsed",`<div class="notice ok">${r.parsed.detected.length} بخش شناسایی شد · ${r.created_task_ids.length} وظیفه و ${r.created_event_ids.length} رویداد ذخیره شد.</div>
-          <div class="small">${r.parsed.chunks.map(esc).join(" · ")}</div>`);
-        renderPlan(r.plan); loadTasks(); loadEvents(); toast("برنامه ساخته و اعتبارسنجی شد.");
-      } catch(e){ setHTML("intake-parsed",errBox(e)); }
+    $("intake-btn")?.addEventListener("click", () => {
+      const text = $("intake-text").value.trim();
+      if (!text) return toast("متن وارد کنید.", true);
+      try {
+        const date = selectedDay();
+        $("voice-open").click();
+        window.dispatchEvent(new CustomEvent("romka:day-draft", { detail: { text, date } }));
+      } catch (e) { toast(e.message, true); }
     });
-    const gen = async (mode) => {
-      try { const r=await api("/planner/generate",{body:{date:selectedDay(),energy_mode:mode}}); renderPlan(r.plan); toast("برنامه محاسبه شد."); }
-      catch(e){ toast(e.message,true); }
+    window.addEventListener("romka:day-draft-saved", () => { loadTasks(); loadEvents(); });
+    const gen = mode => {
+      try {
+        const date = selectedDay(); $("voice-open").click();
+        window.dispatchEvent(new CustomEvent("romka:plan-preview", {detail:{date, mode}}));
+      } catch (e) { toast(e.message, true); }
     };
     $("gen-btn")?.addEventListener("click",()=>gen("normal"));
     $("low-btn")?.addEventListener("click",()=>gen("low"));
+    window.addEventListener("romka:plan-activated", () => { refreshPlan(); loadTasks(); });
     $("replan-btn")?.addEventListener("click",async()=>{
       const id=$("rp-event").value, end=+$("rp-end").value;
       try { const body={date:selectedDay(),extended_events:{},completed_task_ids:[],replan_from_min:end||null};

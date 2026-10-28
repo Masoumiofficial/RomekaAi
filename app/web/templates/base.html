@@ -6,7 +6,7 @@
   <meta name="csrf-token" content="{{ csrf }}">
   <meta name="color-scheme" content="dark light">
   <title>{{ title }} — ROMKA</title>
-  <link rel="stylesheet" href="/static/css/romka.css">
+  <link rel="stylesheet" href="/static/css/romka.css?v=0.2.18">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%238b7cf6'/><text x='32' y='43' font-size='36' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>R</text></svg>">
 </head>
 <body data-page="{{ page }}" data-csrf="{{ csrf }}" data-auth="{{ auth_mode }}">
@@ -31,7 +31,7 @@
     <div class="card flat" style="padding:12px">
       <div class="chip-mini"><span>موتور هوش مصنوعی</span><span id="sb-provider" class="faint">…</span></div>
       <div class="chip-mini" style="margin-top:6px"><span>برنامه</span><span id="sb-plan" class="faint">…</span></div>
-      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.17</span></div>
+      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.18</span></div>
     </div>
     <div class="sidebar-foot">
       <div class="small faint" style="margin-bottom:8px">{{ user.display_name or user.email }}</div>
@@ -58,6 +58,7 @@
     <div class="card-h"><h2>دستیار رومکا</h2><button type="button" class="btn sm ghost" id="voice-close" aria-label="بستن دستیار">بستن</button></div>
     <p class="small muted">میکروفون فقط با انتخاب شما روشن می‌شود. تشخیص گفتار ممکن است صدا را به سرویس مرورگر بفرستد. پیش از ارسال، متن را بررسی کنید. متن ارسالی و حافظهٔ مجاز ممکن است به مدل خارجی برسند و هزینه داشته باشند.</p>
     <div class="row"><button type="button" class="btn sm" id="voice-mic">شروع ضبط</button>
+      <button type="button" class="btn sm" id="day-draft-parse">استخراج پیشنهاد از متن روز</button>
       <button type="button" class="btn sm ghost" id="voice-stop" disabled>توقف ضبط</button>
       <button type="button" class="btn sm ghost" id="voice-new">گفت‌وگوی جدید</button></div>
     <div id="voice-status" class="small muted" role="status" aria-live="polite">برای صحبت، ضبط را شروع کنید یا متن بنویسید.</div>
@@ -73,6 +74,20 @@
       <button type="button" class="btn sm" id="voice-preview">پیش‌نمایش برنامه امروز</button>
     </div>
     <div id="voice-reply" class="voice-reply" aria-live="polite"></div>
+    <div id="day-draft" class="voice-confirm" hidden aria-label="پیش‌نویس موارد روز">
+      <strong>پیش‌نویس پیشنهادی، نه ثبت قطعی</strong>
+      <p class="xs faint">استخراج محلی و محدود است و ممکن است متن را اشتباه تقسیم کند. هر مورد و زمان را بررسی و ویرایش کنید. موارد پیش‌فرض انتخاب نشده‌اند؛ فقط موارد انتخاب‌شده ثبت می‌شوند. برای تاریخ‌های متفاوت جداگانه بررسی و ثبت کنید. برنامه خودکار ساخته یا فعال نمی‌شود. تاریخ برای تعهد الزامی است؛ وظایف باز ممکن است در پیش‌نمایش روزهای دیگر نیز لحاظ شوند.</p>
+      <fieldset id="day-draft-fields">
+        <label class="label" for="day-draft-date">تاریخ مشترک موارد انتخاب‌شده (شمسی، مانند ۱۴۰۵/۰۸/۰۶)</label>
+        <input id="day-draft-date" class="input" type="text" inputmode="numeric" autocomplete="off">
+        <div id="day-draft-items"></div>
+      </fieldset>
+      <p id="day-draft-message" class="small" role="status" aria-live="polite"></p>
+      <div class="row" style="gap:6px;flex-wrap:wrap">
+        <button class="btn primary sm" type="button" id="day-draft-commit">تأیید و ثبت موارد انتخاب‌شده</button>
+        <button class="btn sm" type="button" id="day-draft-cancel">لغو پیش‌نویس</button>
+      </div>
+    </div>
     <div id="voice-confirm" class="voice-confirm" hidden>
       <h3 id="voice-action-title"></h3>
       <label for="voice-action-name">عنوان قابل ویرایش</label><input id="voice-action-name" maxlength="400">
@@ -93,8 +108,9 @@
   <button type="button" class="btn primary voice-launch" id="voice-open" aria-controls="voice-panel" aria-expanded="false">دستیار صوتی</button>
 </div>
 <script src="/static/js/persian-date.js"></script>
-<script src="/static/js/romka.js"></script>
-<script src="/static/js/voice.js?v=0.2.17"></script>
+<script src="/static/js/romka.js?v=0.2.18"></script>
+<script src="/static/js/voice.js?v=0.2.18"></script>
+<script src="/static/js/day-draft.js?v=0.2.18"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -9,16 +9,18 @@
 
 | فایل | نسخه | برای چه کسی |
 |---|---|---|
-| `romka-v0.2.17.zip` | 0.2.17 — **کامل** | نسخهٔ پیش‌فرض؛ همهٔ ابزارها از جمله `doctor.py` |
-| `romka-v0.2.17-core.zip` | 0.2.17 — **Core** | اگر آنتی‌ویروس/Defender هشدار داد |
+| `romka-v0.2.18.zip` | 0.2.18 — **کامل** | نسخهٔ پیش‌فرض؛ همهٔ ابزارها از جمله `doctor.py` |
+| `romka-v0.2.18-core.zip` | 0.2.18 — **Core** | اگر آنتی‌ویروس/Defender هشدار داد |
 | [`CHECKSUMS.txt`](CHECKSUMS.txt) | — | هش هر دو آرشیو، **بدون نیاز به دانلود** (در مرورگر باز کنید) |
-| `romka-v0.2.17.zip.sha256` · `romka-v0.2.17-core.zip.sha256` | — | همان عدد، کنار هر فایل (اختیاری) |
+| `romka-v0.2.18.zip.sha256` · `romka-v0.2.18-core.zip.sha256` | — | همان عدد، کنار هر فایل (اختیاری) |
 
 تفاوت دو نسخه فقط سه فایل و یک پوشه است: `scripts/doctor.py` (فهرست پروسه‌ها،
 بستن پروسهٔ اشغال‌کنندهٔ پورت)، `scripts/verify_provider.py` (خواندن کلید API از
 متغیر محیطی و یک درخواست آزمایشی) و `deploy/` (اسکریپت‌های systemd/nginx/بکاپ).
 **هیچ‌کدام برای اجرای ROMKA لازم نیستند**؛ در نسخهٔ Core اگر پورت اشغال باشد،
 `run_dev` با پیام روشن متوقف می‌شود و باید خودتان برنامهٔ مزاحم را ببندید.
+
+نسخهٔ 0.2.17 برای حفظ لینک‌های قبلی نیز در این پوشه نگه داشته شده است؛ نسخهٔ توصیه‌شده 0.2.18 است.
 
 سابقه: ~~`romka-v0.2.0.zip`~~، ~~`romka-v0.2.1.zip`~~، ~~`romka-v0.2.2.zip`~~،
 ~~`romka-v0.2.3.zip`~~، ~~`romka-v0.2.4.zip`~~ جایگزین شده‌اند.
@@ -35,7 +37,7 @@
 ```bash
 python scripts/build_release.py --sha256-file                      # کامل
 python scripts/build_release.py --profile core --sha256-file       # Core
-sha256sum release/romka-v0.2.17.zip        # ویندوز: Get-FileHash -Algorithm SHA256
+sha256sum release/romka-v0.2.18.zip        # ویندوز: Get-FileHash -Algorithm SHA256
 ```
 
 اگر عدد خروجی با فایل `.sha256` یکی بود، فایل بایتی همان چیزی است که تست شد.
@@ -43,12 +45,12 @@ sha256sum release/romka-v0.2.17.zip        # ویندوز: Get-FileHash -Algorit
 ## نصب پس از دانلود
 
 ```bash
-unzip romka-v0.2.17.zip && cd romka
+unzip romka-v0.2.18.zip && cd romka
 ./scripts/setup.sh && ./scripts/run_dev.sh
 ```
 
 ```powershell
-Expand-Archive .\romka-v0.2.17.zip -DestinationPath C:\ ; cd C:\romka
+Expand-Archive .\romka-v0.2.18.zip -DestinationPath C:\ ; cd C:\romka
 .\scripts\setup.ps1 ; .\scripts\run_dev.ps1
 ```
 

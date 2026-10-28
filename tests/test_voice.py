@@ -15,7 +15,7 @@ def test_voice_widget_is_on_every_workspace_page(client):
     for path in ("/", "/chat", "/planner", "/agents", "/business", "/health", "/memory", "/settings", "/onboarding"):
         response = client.get(path)
         assert response.status_code == 200
-        for item in ("voice-widget", "voice-mic", "voice-text", "voice-confirm", "voice-plan-confirm", "voice-today", "voice-preview", '/static/js/voice.js?v=0.2.17'):
+        for item in ("voice-widget", "voice-mic", "voice-text", "voice-confirm", "voice-plan-confirm", "voice-today", "voice-preview", '/static/js/voice.js?v=0.2.18'):
             assert item in response.text
         assert 'id="voice-panel" class="voice-panel card" aria-label="دستیار صوتی رومکا" hidden' in response.text
     assert client.get('/static/js/voice.js').status_code == 200

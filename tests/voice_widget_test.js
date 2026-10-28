@@ -24,7 +24,7 @@ class Recognition {
 }
 const win={SpeechRecognition:Recognition, SpeechSynthesisUtterance:class {constructor(text){this.text=text;}},
  speechSynthesis:{cancel(){}, getVoices(){return [{lang:'fa-IR'}]}, speak(u){spoken.push(u.text)}},
- location:{assign(p){navigated=p}}, addEventListener(){}};
+ location:{assign(p){navigated=p}}, addEventListener(){}, dispatchEvent(){}};
 const document={getElementById:id=>els[id],querySelector:()=>({content:'csrf-test'}),body:{dataset:{}}};
 const fetch=async(url,opts)=>{calls.push([url,opts]); if(failWrite && opts.method==='POST' && url.includes('/planner/tasks')) throw new Error('network');
  let data={ok:true}; if(url.endsWith('/chat/send')) data={ok:true,conversation_id:42,answer:'پاسخ مدل'};
@@ -36,7 +36,7 @@ const fetch=async(url,opts)=>{calls.push([url,opts]); if(failWrite && opts.metho
    data={ok:true,plan:mockPlan,plan_db_id:12};
  }
  return {ok:true,status:200,json:async()=>data};};
-vm.runInNewContext(fs.readFileSync('app/web/static/js/voice.js','utf8'),{window:win,document,sessionStorage:storage,fetch,console});
+vm.runInNewContext(fs.readFileSync('app/web/static/js/voice.js','utf8'),{window:win,document,sessionStorage:storage,fetch,console,CustomEvent:class {constructor(type){this.type=type}}});
 (async()=>{
  assert.equal(currentRec,null); // No microphone on page load or opening.
  await els['voice-open'].click(); assert.equal(currentRec,null);

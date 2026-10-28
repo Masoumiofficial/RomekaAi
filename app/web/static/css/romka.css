@@ -256,3 +256,7 @@ th { color: var(--faint); font-weight: 600; font-size: 11px; }
 .voice-confirm { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin: 10px 0; }
 .voice-confirm h3 { margin: 0 0 6px; font-size: 13px; }
 .voice-launch { box-shadow: var(--shadow); }
+
+#day-draft-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
+#day-draft-items input[type="checkbox"] { width: auto; margin-inline-end: 6px; }
+#day-draft-items .card { margin: 10px 0; overflow-wrap: anywhere; }

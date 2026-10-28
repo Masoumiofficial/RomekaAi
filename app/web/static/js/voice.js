@@ -24,6 +24,7 @@
   }
   const status = message => { $('voice-status').textContent = message; };
   let recognition = null, captureAllowed = false, lastReply = '', busy = false, pending = null, pendingPlan = null;
+  window.RomkaVoiceListening = () => recognition !== null;
   const setBusy = value => {
     busy = value; $('voice-send').disabled = value; $('voice-action-apply').disabled = value;
     $('voice-mic').disabled = value || !!recognition; $('voice-new').disabled = value; $('voice-action-cancel').disabled = value;
@@ -153,6 +154,20 @@
     if (plan.calibration?.note) lines.push(`کالیبراسیون: ${plan.calibration.note}`);
     return lines.join('\n');
   }
+  async function showPreview(body) {
+    const data = await api('/planner/preview', body);
+    let explanation = 'منبع برنامه‌ریز: وظایف، تعهدات و پروفایل ثبت‌شده؛ متن گفتگو یا حافظه به‌طور خودکار وظیفه نمی‌شود.';
+    if (data.inputs) {
+      explanation += `\nوظایف باز: ${data.inputs.open_tasks}؛ تعهدات ثابت این روز: ${data.inputs.fixed_events}.`;
+      if (!data.inputs.profile_completed) explanation += '\nپروفایل اولیه تکمیل نشده است.';
+      if (!data.inputs.open_tasks && !data.inputs.fixed_events) explanation += '\nبرای این محاسبه وظیفه یا تعهد ثابتی ثبت نشده است.';
+    }
+    explanation += '\nبرخی زمان‌ها یا ظرفیت‌ها ممکن است پیش‌فرض باشند؛ آنها را در پروفایل بررسی کنید.';
+    reply(explanation + '\n\n' + formatPlan(data.plan, data.plan?.date, true));
+    pendingPlan = data.token || null;
+    $('voice-plan-confirm').hidden = !pendingPlan;
+    return pendingPlan ? 'پیش‌نمایش آماده است؛ هنوز چیزی ثبت نشده است.' : 'این پیش‌نمایش معتبر نیست؛ تعارض‌ها را در پاسخ بررسی کنید.';
+  }
   async function submitText(text, preserveDraft=false) {
     if (busy) return;
     if (recognition) { status('ابتدا ضبط را متوقف کنید و متن را بررسی کنید.'); return; }
@@ -191,18 +206,7 @@
         reply(formatPlan(data.plan, data.date, false));
         finalStatus = 'برنامهٔ فعال دریافت شد؛ چیزی تغییر نکرد.';
       } else if (command.type === 'plan-preview') {
-        const data = await api('/planner/preview', {energy_mode:'normal'});
-        let explanation = 'منبع برنامه‌ریز: وظایف، تعهدات و پروفایل ثبت‌شده؛ متن گفتگو یا حافظه به‌طور خودکار وظیفه نمی‌شود.';
-        if (data.inputs) {
-          explanation += `\nوظایف باز: ${data.inputs.open_tasks}؛ تعهدات ثابت این روز: ${data.inputs.fixed_events}.`;
-          if (!data.inputs.profile_completed) explanation += '\nپروفایل اولیه تکمیل نشده است.';
-          if (!data.inputs.open_tasks && !data.inputs.fixed_events) explanation += '\nبرای این محاسبه وظیفه یا تعهد ثابتی ثبت نشده است.';
-        }
-        explanation += '\nبرخی زمان‌ها یا ظرفیت‌ها ممکن است پیش‌فرض باشند؛ آنها را در پروفایل بررسی کنید.';
-        reply(explanation + '\n\n' + formatPlan(data.plan, data.plan?.date, true));
-        pendingPlan = data.token || null;
-        $('voice-plan-confirm').hidden = !pendingPlan;
-        finalStatus = pendingPlan ? 'پیش‌نمایش آماده است؛ هنوز چیزی ثبت نشده است.' : 'این پیش‌نمایش معتبر نیست؛ تعارض‌ها را در پاسخ بررسی کنید.';
+        finalStatus = await showPreview({energy_mode:'normal'});
       } else {
         const data = await api('/chat/send', {text, conversation_id:getConversation(), include_history:$('voice-history').checked, allow_remember:false});
         if (Number.isSafeInteger(data.conversation_id) && data.conversation_id > 0) setConversation(data.conversation_id);
@@ -216,6 +220,13 @@
     } catch (e) { status(e.message); }
     finally { setBusy(false); }
   }
+  window.addEventListener('romka:plan-preview', async event => {
+    if (busy || recognition || pending || pendingPlan) { status('ابتدا ضبط یا پیش‌نمایش قبلی را تمام کنید.'); return; }
+    setBusy(true); status('در حال محاسبه پیش‌نمایش…');
+    try { status(await showPreview({date:event.detail.date, energy_mode:event.detail.mode})); }
+    catch (e) { status(e.message); }
+    finally { setBusy(false); }
+  });
   $('voice-send').addEventListener('click', () => submitText($('voice-text').value.trim()));
   $('voice-today').addEventListener('click', () => submitText('برنامه امروز', true));
   $('voice-preview').addEventListener('click', () => submitText('پیش نمایش برنامه امروز', true));
@@ -227,6 +238,7 @@
       pendingPlan = null; $('voice-plan-confirm').hidden = true;
       reply(formatPlan(data.plan, data.plan?.date, false));
       status('برنامه فعال شد؛ برای به‌روزرسانی صفحهٔ فعلی آن را بازخوانی کنید.');
+      window.dispatchEvent(new CustomEvent('romka:plan-activated'));
       if (lastReply && $('voice-auto-speak').checked && !$('voice-panel').hidden) readReply();
     } catch (e) {
       pendingPlan = null; $('voice-plan-confirm').hidden = true;

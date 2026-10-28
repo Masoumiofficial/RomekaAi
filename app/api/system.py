@@ -19,7 +19,7 @@ from app.skills.registry import skill_registry
 
 router = APIRouter(tags=["system"])
 
-VERSION = "0.2.17"
+VERSION = "0.2.18"
 
 
 def _demo_status(settings: Settings, request: Request) -> dict:
@@ -146,6 +146,8 @@ def approve_action(action_id: int, approve: bool = True,
     if row is None:
         raise NotFound("اقدام پیدا نشد.")
     if not approve:
+        if row.status not in ("pending_approval", "approved"):
+            raise ValidationFailed("این اقدام قبلاً اجرا یا رد شده است.")
         row.status = "denied"
         db.flush()
         return {"ok": True, "item": _action(row)}
