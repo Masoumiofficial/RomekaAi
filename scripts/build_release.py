@@ -16,7 +16,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache",
-             ".mypy_cache", "dist", "build", "backups", "release", "node_modules"}
+             ".mypy_cache", "dist", "build", "backups", "release", "node_modules",
+             # published build output lives here; must never be re-archived
+             "downloads"}
 SKIP_FILES = {"romka.db", ".env", ".romka_dev_secret", ".coverage", "coverage.xml"}
 SKIP_SUFFIX = {".pyc", ".pyo", ".db", ".sqlite", ".sqlite3", ".log"}
 # Any SQLite sidecar (romka.db-wal, romka.db-shm, *.db-journal) is LOCAL STATE.
