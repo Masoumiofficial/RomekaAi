@@ -92,6 +92,10 @@ unzip romka.zip && cd romka
 
 ---
 
+> اگر `failed to locate pyvenv.cfg` دیدید، یعنی `.venv` نیمه‌کاره مانده است:
+> `.\scripts\setup.ps1 -RecreateVenv` آن را از نو می‌سازد (نسخهٔ ۰٫۲٫۱۰ خودش
+> این کار را خودکار انجام می‌دهد).
+
 ## عیب‌یابی
 
 خطاهای رایج (پورت اشغال، `404 File not found` از یک سرور دیگر، پیام‌های PowerShell،

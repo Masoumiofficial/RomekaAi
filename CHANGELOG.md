@@ -2,6 +2,42 @@
 
 همهٔ نسخهها بر اساس [Keep a Changelog](https://keepachangelog.com/) و وضعیت واقعی تستها.
 
+## [0.2.10] — 2026-10-28 — «`failed to locate pyvenv.cfg`: nصب دیگر قفل نمی‌شود»
+
+### Evidence (باگ واقعی، گزارش کاربر)
+پوشهٔ `C:\romka` پاک و از نو ساخته شد، ولی `setup.ps1` گفت
+`reusing existing .venv` و بعد:
+
+```
+failed to locate pyvenv.cfg: The system cannot find the file specified.
+dependency installation failed
+```
+
+یعنی `.venv\Scripts\python.exe` مانده بود (فایل قفل‌شده در پاک‌سازی) ولی
+`pyvenv.cfg` رفته بود. اسکریپت من فقط **وجود فایل** را می‌سنجید، پس نصب برای همیشه
+در همین حالت گیر می‌کرد — بدون راه خروج.
+
+### Fixed
+- **`setup.ps1` حالا venv را «می‌آزماید»:** وجود `Scripts\python.exe` + وجود
+  `pyvenv.cfg` + اجرای موفق `-c "import sys"`. اگر هر کدام نبود، پیام روشن می‌دهد
+  (`existing .venv is broken ... rebuilding it; .env and the database are NOT touched`)
+  و خودش از نو می‌سازد.
+- سوئیچ صریح `-RecreateVenv` (و `RECREATE_VENV=1` در لینوکس) برای شروع تمیز.
+- اگر `.venv` قفل باشد و پاک نشود، خطا می‌گوید پنجره‌های ROMKA/Python را ببندید و
+  دوباره اجرا کنید — نه یک پیام مبهم.
+- **پیام خطای pip قابل‌اقدام شد:** کد خروج، و دو راه‌حل (آینهٔ PyPI برای شبکهٔ ایران،
+  یا `-RecreateVenv`). قبلاً فقط «dependency installation failed» بود.
+- `setup.sh` هم همان منطق را دارد (`venv_healthy()`) تا رفتار دو سیستم یکی باشد.
+
+### Verified
+- سناریوی واقعی روی لینوکس بازسازی شد: `python -m venv .venv` سپس حذف
+  `pyvenv.cfg` → `setup.sh` پیام «broken ... rebuilding» داد، از نو ساخت،
+  **۱۳۴ passed / ۶ skipped**.
+- `pytest -q` → **۱۵۹ passed** · تست جدید: نبودِ probe روی `pyvenv.cfg` را می‌گیرد.
+- CI ویندوز یک گام تازه دارد که **همین حالت را بازسازی می‌کند**
+  (حذف `pyvenv.cfg`، اجرای `setup.ps1`، سپس `import fastapi, sqlalchemy, alembic`)
+  تا اگر روزی برگشت، در CI شکست بخورد نه روی سیستم کاربر.
+
 ## [0.2.9] — 2026-10-28 — «۳٫۱۴ و ویندوز: حالا اجرا می‌شوند، نه فرض»
 
 ### Evidence (CI سبز، اجرا‌شده روی مخزن خود پروژه)

@@ -29,6 +29,8 @@ Python/venv سالم است یا نه، وابستگی‌ها نصب‌اند ی
 | صفحهٔ `Error code: 404 · File not found · Nothing matches the given URI` | سرور دیگری روی همان پورت است — بخش بعدی |
 | `The '<' operator is reserved for future use` | `.\scripts\run_dev.ps1 -FreePort` یا `-Port 8010` |
 | `no such table` | `alembic upgrade head` (اسکریپت setup خودش انجام می‌دهد) |
+| `failed to locate pyvenv.cfg` | `.venv` نیمه‌کاره مانده (اغلب بعد از پاک‌کردن پوشه یا قطع نصب). از ۰٫۲٫۱۰ خود `setup` تشخیص می‌دهد و می‌سازد؛ دستی: `.\scripts\setup.ps1 -RecreateVenv` (لینوکس: `RECREATE_VENV=1 ./scripts/setup.sh`) |
+| `dependency installation failed` | متن خطای `pip` بالاتر را ببینید: شبکه → `$env:PIP_INDEX_URL="https://mirror-pypi.runflare.com/simple"`؛ venv خراب → `-RecreateVenv` |
 | ورود دمو ناموفق | `ROMKA_AUTO_DEMO=true` و `ENVIRONMENT=development` باشد |
 | `Connection refused` روی `127.0.0.1:8000` | سرور بالا نیست؛ `.\scripts\run_dev.ps1` را اجرا کنید |
 | `500` هنگام ثبت‌نام | `docs/STATUS.md` بخش باگ‌های باز؛ لاگ `logs/` را ببینید |

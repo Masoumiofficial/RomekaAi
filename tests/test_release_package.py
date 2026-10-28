@@ -318,3 +318,19 @@ def test_windows_setup_accepts_any_supported_python_version():
     assert "did not answer --version" in text      # explicit -PythonExe is validated
     assert "-PythonExe" in text
     assert "$parts.Length" not in text, "fragile array slice is back"
+
+
+def test_setup_repairs_a_broken_venv_instead_of_wedging():
+    """Real report: after deleting the folder, .venv\\Scripts\\python.exe survived
+    (locked by a previous run), so setup printed 'reusing existing .venv' and every
+    pip call died with 'failed to locate pyvenv.cfg'. A venv must be probed, not
+    trusted just because the directory exists."""
+    ps1 = (build_release.ROOT / "scripts" / "setup.ps1").read_text(encoding="utf-8")
+    sh = (build_release.ROOT / "scripts" / "setup.sh").read_text(encoding="utf-8")
+    for text, marker in ((ps1, "Test-VenvHealthy"), (sh, "venv_healthy")):
+        assert marker in text, f"{marker} missing"
+        assert "pyvenv.cfg" in text, "the pyvenv.cfg probe is what was missing"
+        assert "broken" in text
+    assert "-RecreateVenv" in ps1 and "RECREATE_VENV" in sh
+    # dependencies must not be installed into a venv that cannot run
+    assert ps1.index("Test-VenvHealthy $venvDir $venvPy") < ps1.index("pip install -r")

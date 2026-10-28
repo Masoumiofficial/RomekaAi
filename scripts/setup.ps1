@@ -4,9 +4,11 @@
 #   .\scripts\setup.ps1              # create venv, install deps, migrate, verify
 #   .\scripts\setup.ps1 -SkipTests   # faster: no test run
 #   .\scripts\setup.ps1 -PythonExe "py -3.11"
+#   .\scripts\setup.ps1 -RecreateVenv  # throw away a broken .venv and rebuild
 param(
     [string]$PythonExe = "",
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    [switch]$RecreateVenv
 )
 
 $ErrorActionPreference = "Stop"
@@ -77,26 +79,85 @@ function Resolve-Python {
 
 $py = Resolve-Python $PythonExe
 
-if (-not (Test-Path ".venv\Scripts\python.exe")) {
-    Write-Host "creating virtual environment..." -ForegroundColor Yellow
-    # Splat properly. The old slice-on-a-one-word-command trick produced a bogus
-    # argument list, so a plain 'python' candidate could never work.
-    $venvParts = @($py.Trim().Split(" "))
-    $venvCmd = $venvParts[0]
-    $venvRest = @()
-    if ($venvParts.Count -gt 1) { $venvRest = $venvParts[1..($venvParts.Count - 1)] }
-    & $venvCmd @venvRest -m venv .venv
-    if ($LASTEXITCODE -ne 0) { throw "could not create .venv with '$py'" }
-    if (-not (Test-Path ".venv\Scripts\python.exe")) { throw ".venv was created but has no python.exe" }
-} else {
-    Write-Host "reusing existing .venv" -ForegroundColor DarkGray
+$venvDir = Join-Path $root ".venv"
+$venvPy = Join-Path $venvDir "Scripts\python.exe"
+$venvCfg = Join-Path $venvDir "pyvenv.cfg"
+
+# A venv directory can exist and still be unusable: an interrupted creation, a
+# half-deleted folder, or a moved/renamed project leaves python.exe without
+# pyvenv.cfg, and every later command then dies with
+#   "failed to locate pyvenv.cfg: The system cannot find the file specified."
+# Testing only for python.exe wedged setup forever (reported by a user), so the
+# venv is probed and rebuilt automatically.
+function Test-VenvHealthy {
+    param([string]$Dir, [string]$Py)
+    if (-not (Test-Path $Py)) { return $false }
+    if (-not (Test-Path (Join-Path $Dir "pyvenv.cfg"))) { return $false }
+    try {
+        & $Py -c "import sys" 2>&1 | Out-Null
+    } catch {
+        return $false
+    }
+    return ($LASTEXITCODE -eq 0)
 }
 
-$vpy = Join-Path $root ".venv\Scripts\python.exe"
+function New-RomkaVenv {
+    param([string]$Command, [string]$Dir)
+    $parts = @($Command.Trim().Split(" "))
+    $cmd = $parts[0]
+    $rest = @()
+    if ($parts.Count -gt 1) { $rest = $parts[1..($parts.Count - 1)] }
+    & $cmd @rest -m venv $Dir
+    if ($LASTEXITCODE -ne 0) { throw "could not create .venv with '$Command'" }
+    if (-not (Test-Path (Join-Path $Dir "Scripts\python.exe"))) {
+        throw ".venv was created but has no Scripts\python.exe"
+    }
+}
+
+if ($RecreateVenv -and (Test-Path $venvDir)) {
+    Write-Host "removing .venv (-RecreateVenv)..." -ForegroundColor Yellow
+    Remove-Item $venvDir -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path $venvDir) {
+        throw ("could not delete $venvDir - close any running ROMKA/Python window, " +
+               "then delete the folder manually and run setup again")
+    }
+}
+
+if (-not (Test-Path $venvDir)) {
+    Write-Host "creating virtual environment..." -ForegroundColor Yellow
+    New-RomkaVenv $py $venvDir
+} elseif (Test-VenvHealthy $venvDir $venvPy) {
+    Write-Host "reusing existing .venv" -ForegroundColor DarkGray
+} else {
+    Write-Host "existing .venv is broken (missing pyvenv.cfg or python.exe does not run)" -ForegroundColor Yellow
+    Write-Host "  rebuilding it; .env and the database are NOT touched" -ForegroundColor Yellow
+    Remove-Item $venvDir -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path $venvDir) {
+        throw ("$venvDir is locked and cannot be removed - close every ROMKA/Python " +
+               "window, then run: .\scripts\setup.ps1 -RecreateVenv")
+    }
+    New-RomkaVenv $py $venvDir
+}
+
+if (-not (Test-VenvHealthy $venvDir $venvPy)) {
+    throw (".venv was created but this Python cannot run from it. Try a different " +
+           "interpreter, e.g. .\scripts\setup.ps1 -RecreateVenv -PythonExe ""py -3.12""")
+}
+
+$vpy = $venvPy
 Write-Host "installing dependencies..." -ForegroundColor Yellow
 & $vpy -m pip install --upgrade pip --quiet
+if ($LASTEXITCODE -ne 0) { Write-Host "warning: could not upgrade pip (continuing)" -ForegroundColor DarkYellow }
 & $vpy -m pip install -r requirements-dev.txt --quiet
-if ($LASTEXITCODE -ne 0) { throw "dependency installation failed" }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "pip could not install the requirements (exit $LASTEXITCODE)." -ForegroundColor Red
+    Write-Host "  network/SSL problem?  retry with a mirror:" -ForegroundColor Yellow
+    Write-Host "    `$env:PIP_INDEX_URL=""https://mirror-pypi.runflare.com/simple""" -ForegroundColor Yellow
+    Write-Host "    .\scripts\setup.ps1" -ForegroundColor Yellow
+    Write-Host "  broken .venv?         .\scripts\setup.ps1 -RecreateVenv" -ForegroundColor Yellow
+    throw "dependency installation failed"
+}
 
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"

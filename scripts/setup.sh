@@ -18,6 +18,19 @@ for arg in "$@"; do
   esac
 done
 
+# A .venv can exist and still be unusable (interrupted creation, half-deleted
+# folder, moved project): python exists but pyvenv.cfg does not, and every later
+# command dies. Probe it, do not just look for the file.
+venv_healthy() {
+  [ -x ".venv/bin/python" ] && [ -f ".venv/pyvenv.cfg" ] &&
+    .venv/bin/python -c "import sys" >/dev/null 2>&1
+}
+
+if [ "${RECREATE_VENV:-0}" = "1" ] && [ -d ".venv" ]; then
+  echo "== removing .venv (RECREATE_VENV=1) =="
+  rm -rf .venv
+fi
+
 if [ ! -x ".venv/bin/python" ]; then
   if [ "$TEST_ONLY" = "1" ]; then
     echo "no .venv yet; run ./scripts/setup.sh first" >&2
@@ -26,6 +39,25 @@ if [ ! -x ".venv/bin/python" ]; then
   PY="${PYTHON:-python3}"
   echo "== creating virtualenv with $PY =="
   "$PY" -m venv .venv
+  if [ ! -x ".venv/bin/python" ]; then
+    echo "could not create .venv with $PY" >&2
+    exit 1
+  fi
+  .venv/bin/python -m pip install --upgrade pip --quiet
+  .venv/bin/python -m pip install -r requirements-dev.txt --quiet
+elif ! venv_healthy; then
+  if [ "$TEST_ONLY" = "1" ]; then
+    echo "existing .venv is broken; run ./scripts/setup.sh (or RECREATE_VENV=1 ./scripts/setup.sh)" >&2
+    exit 2
+  fi
+  echo "== existing .venv is broken (missing pyvenv.cfg or python does not run); rebuilding =="
+  rm -rf .venv
+  PY="${PYTHON:-python3}"
+  "$PY" -m venv .venv
+  if [ ! -x ".venv/bin/python" ]; then
+    echo "could not rebuild .venv with $PY" >&2
+    exit 1
+  fi
   .venv/bin/python -m pip install --upgrade pip --quiet
   .venv/bin/python -m pip install -r requirements-dev.txt --quiet
 fi

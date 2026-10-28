@@ -94,6 +94,19 @@ jobs:
               ForEach-Object { Write-Host "::error title=windows-test::$($_.Line)" }
             exit 1
           }
+      - name: a broken .venv is repaired, not fatal
+        shell: pwsh
+        # A user deleted C:\romka but .venv\Scripts\python.exe survived (locked
+        # file), so a later setup said "reusing existing .venv" and every pip call
+        # died with 'failed to locate pyvenv.cfg'. Reproduce that exact state.
+        run: |
+          Remove-Item .venv\pyvenv.cfg -Force
+          .\scripts\setup.ps1 -SkipTests
+          if ($LASTEXITCODE -ne 0) { throw "setup.ps1 did not repair the venv" }
+          if (-not (Test-Path .venv\pyvenv.cfg)) { throw "pyvenv.cfg was not restored" }
+          .\.venv\Scripts\python.exe -c "import fastapi, sqlalchemy, alembic; print('deps ok')"
+          if ($LASTEXITCODE -ne 0) { throw "dependencies are not importable after repair" }
+
       - name: run_dev.ps1 starts the server and answers health
         shell: pwsh
         run: |
