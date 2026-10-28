@@ -1,21 +1,9 @@
-ROMKA — SHA-256 of every published archive
-==========================================
+ROMKA archive SHA-256 checksums
 
-Compare the value below with what your machine reports, then decide. Nothing else
-is needed: this file can be read straight from the GitHub web page, so verifying
-does not require a second download (the per-archive .sha256 sidecars are optional
-copies of the same numbers).
+Windows PowerShell: Get-FileHash -Algorithm SHA256 .\romka-v0.2.11-core.zip
+Linux/macOS: sha256sum romka-v0.2.11-core.zip
 
-Windows PowerShell:
-    Get-ChildItem *.zip | Get-FileHash -Algorithm SHA256 | Format-List
+Matching hashes show the file matches the published bytes; they do not prove that the file is safe. Investigate antivirus warnings and see docs/ANTIVIRUS.md.
 
-Linux / macOS:
-    sha256sum *.zip
-
-If your hash equals the one listed here, the file is the byte-for-byte archive
-built from this commit and tested from a clean folder. An antivirus warning is
-then a heuristic false positive, not a modified file - see docs/ANTIVIRUS.md for
-the evidence and for how to report the false positive.
-
-b0fa68e46d1c79c78a783c0ff42e8aecfa86003d8aefef98357e845aecad15fd  romka-v0.2.10.zip  (276,175 bytes)
-06c5e63f2c753adf86cbb966dc1671a085560e57fa1e83cb973c5e302ff278a7  romka-v0.2.10-core.zip  (260,083 bytes)
+668a124f2ae26c8dab1980a15d8c476ea55ccd423b8cf16909392826e4a27e3b  romka-v0.2.11-core.zip  (265,842 bytes)
+2e4f8d6ad9de9bc0647b0a9a36b1743d9aabe59c01f88da34cf70d9b570dfa17  romka-v0.2.11.zip  (281,934 bytes)

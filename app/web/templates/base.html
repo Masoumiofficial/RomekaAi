@@ -14,24 +14,24 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-mark">R</div>
-      <div><div class="brand-name">ROMKA</div><div class="brand-sub">Personal Intelligence</div></div>
+      <div><div class="brand-name">ROMKA</div><div class="brand-sub">هوش شخصی</div></div>
     </div>
     <div class="nav-label">فضای کاری</div>
     <nav class="nav">
       <a href="/" class="{{ 'active' if page=='dashboard' }}"><span class="ico">◈</span> داشبورد</a>
-      <a href="/chat" class="{{ 'active' if page=='chat' }}"><span class="ico">◍</span> گفتوگو با رومکا</a>
-      <a href="/planner" class="{{ 'active' if page=='planner' }}"><span class="ico">◷</span> برنامهریز</a>
-      <a href="/agents" class="{{ 'active' if page=='agents' }}"><span class="ico">✧</span> متخصصها</a>
-      <a href="/business" class="{{ 'active' if page=='business' }}"><span class="ico">◇</span> پروژهها و کسبوکار</a>
+      <a href="/chat" class="{{ 'active' if page=='chat' }}"><span class="ico">◍</span> گفت‌وگو با رومکا</a>
+      <a href="/planner" class="{{ 'active' if page=='planner' }}"><span class="ico">◷</span> برنامه‌ریز</a>
+      <a href="/agents" class="{{ 'active' if page=='agents' }}"><span class="ico">✧</span> متخصص‌ها</a>
+      <a href="/business" class="{{ 'active' if page=='business' }}"><span class="ico">◇</span> پروژه‌ها و کسب‌وکار</a>
       <a href="/health" class="{{ 'active' if page=='health' }}"><span class="ico">⛬</span> سلامت و بدن</a>
       <a href="/memory" class="{{ 'active' if page=='memory' }}"><span class="ico">▤</span> حافظه و اطلاعات</a>
       <a href="/settings" class="{{ 'active' if page=='settings' }}"><span class="ico">⚙</span> تنظیمات سیستم</a>
     </nav>
     <div class="nav-label">وضعیت</div>
     <div class="card flat" style="padding:12px">
-      <div class="chip-mini"><span>موتور AI</span><span id="sb-provider" class="faint">…</span></div>
+      <div class="chip-mini"><span>موتور هوش مصنوعی</span><span id="sb-provider" class="faint">…</span></div>
       <div class="chip-mini" style="margin-top:6px"><span>برنامه</span><span id="sb-plan" class="faint">…</span></div>
-      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.10</span></div>
+      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.11</span></div>
     </div>
     <div class="sidebar-foot">
       <div class="small faint" style="margin-bottom:8px">{{ user.display_name or user.email }}</div>
@@ -53,6 +53,7 @@
   </main>
 </div>
 <div class="toast" id="toast"></div>
+<script src="/static/js/persian-date.js"></script>
 <script src="/static/js/romka.js"></script>
 {% block scripts %}{% endblock %}
 </body>

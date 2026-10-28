@@ -2,13 +2,13 @@
 {% block content %}
 <div class="grid g-2">
   <div class="card">
-    <div class="card-h"><h2>پروژهها</h2><span class="hint">پیشرفت واقعی = وظایف انجامشده</span></div>
+    <div class="card-h"><h2>پروژه‌ها</h2><span class="hint">پیشرفت واقعی = وظایف انجام‌شده</span></div>
     <div id="project-list" class="list"></div>
     <div class="hr"></div>
     <div class="field"><label>پروژه جدید</label><input id="proj-name" placeholder="نام پروژه"></div>
-    <div class="field"><label>هدف پروژه</label><input id="proj-goal" placeholder="یک جمله قابل اندازهگیری"></div>
+    <div class="field"><label>هدف پروژه</label><input id="proj-goal" placeholder="یک جمله قابل اندازه‌گیری"></div>
     <div class="grid-form"><div class="field"><label>اولویت</label><input id="proj-pri" type="number" value="2" min="1" max="5"></div>
-    <div class="field"><label>موعد</label><input id="proj-due" type="date"></div></div>
+    <div class="field"><label for="proj-due">موعد شمسی (اختیاری)</label><input id="proj-due" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۰۶"></div></div>
     <button class="btn sm primary" id="add-project-btn">ایجاد پروژه</button>
   </div>
   <div class="card">
@@ -19,7 +19,7 @@
   </div>
 </div>
 <div class="card" style="margin-top:16px">
-  <div class="card-h"><h2>تفکیک مشغولیت از پیشرفت</h2><span class="hint">بر اساس داده واقعی ثبتشده</span></div>
+  <div class="card-h"><h2>تفکیک مشغولیت از پیشرفت</h2><span class="hint">بر اساس داده واقعی ثبت‌شده</span></div>
   <div id="biz-insight" class="small muted">در حال محاسبه…</div>
 </div>
 {% endblock %}

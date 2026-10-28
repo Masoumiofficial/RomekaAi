@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="grid g-4" style="margin-bottom:16px">
-  <div class="card"><div class="kpi"><span class="l">متخصصان تعریفشده</span><span class="v" id="a-count">—</span></div></div>
+  <div class="card"><div class="kpi"><span class="l">متخصصان تعریف‌شده</span><span class="v" id="a-count">—</span></div></div>
   <div class="card"><div class="kpi"><span class="l">فعال</span><span class="v" id="a-active">—</span></div></div>
   <div class="card"><div class="kpi"><span class="l">نسخه رجیستری</span><span class="v mono" id="a-version">—</span></div></div>
   <div class="card"><div class="kpi"><span class="l">حداکثر متخصص پاسخگو</span><span class="v">۲</span><span class="d">متخصص بیشتر لزوماً بهتر نیست</span></div></div>
 </div>
 <div class="grid g-2" style="margin-bottom:16px">
-  <div class="card"><div class="card-h"><h2>نقشه آناتومی</h2><span class="hint">میانبر به حوزهها</span></div>{% include "_anatomy.html" %}</div>
-  <div class="card"><div class="card-h"><h2>آخرین اجراهای متخصصها</h2></div><div id="run-list" class="list"></div></div>
+  <div class="card"><div class="card-h"><h2>نقشه آناتومی</h2><span class="hint">میانبر به حوزه‌ها</span></div>{% include "_anatomy.html" %}</div>
+  <div class="card"><div class="card-h"><h2>آخرین اجراهای متخصص‌ها</h2></div><div id="run-list" class="list"></div></div>
 </div>
 <div class="grid g-3" id="agent-grid"></div>
 {% endblock %}

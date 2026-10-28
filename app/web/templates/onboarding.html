@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="card" style="max-width:720px;margin:auto">
-  <div class="card-h"><h2>راهاندازی مرحلهای</h2><span class="hint">همه فیلدها اختیاری هستند جز نام</span></div>
+  <div class="card-h"><h2>راه‌اندازی مرحله‌ای</h2><span class="hint">همه فیلدها اختیاری هستند جز نام</span></div>
   <div class="grid-form">
     <div class="field"><label>نام نمایشی</label><input id="o-name" value="{{ user.display_name }}"></div>
     <div class="field"><label>منطقه زمانی</label><input id="o-tz" value="{{ user.timezone }}"></div>
@@ -9,7 +9,7 @@
     <div class="field"><label>ساعت خواب</label><input id="o-sleep" type="number" value="1380"></div>
   </div>
   <div class="field"><label>اهداف اصلی (با کاما جدا کنید)</label><input id="o-goals" placeholder="انتشار محصول، بهبود سلامت"></div>
-  <div class="field"><label>چیزهایی که انرژی شما را کم میکنند</label><input id="o-drains"></div>
+  <div class="field"><label>چیزهایی که انرژی شما را کم می‌کنند</label><input id="o-drains"></div>
   <button class="btn primary" id="o-save">ذخیره و رفتن به داشبورد</button>
 </div>
 {% endblock %}

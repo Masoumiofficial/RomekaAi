@@ -3,29 +3,29 @@
 <div class="grid g-main">
   <div class="stack">
     <div class="card">
-      <div class="card-h"><h2>ورودی طبیعی روز</h2><span class="hint">جمله بنویسید؛ وظایف و رویدادها استخراج میشوند</span></div>
+      <div class="card-h"><h2>ورودی طبیعی روز</h2><span class="hint">جمله بنویسید؛ وظایف و رویدادها استخراج می‌شوند</span></div>
       <div class="field"><textarea id="intake-text" placeholder="امروز باید روی انتشار گپینه کار کنم، نویدبان را بررسی کنم، یک جلسه کاری دارم، خرید کنم و ساعت شش باشگاه بروم."></textarea></div>
       <div class="row"><button class="btn primary" id="intake-btn">ثبت و ساخت برنامه</button>
-        <button class="btn sm ghost" id="example-btn">نمونه سناریو A</button>
+        <button class="btn sm ghost" id="example-btn">نمونه نمونه روزانه</button>
         <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="intake-save" checked style="width:auto"> ذخیره وظایف</label></div>
       <div id="intake-parsed" class="small muted" style="margin-top:10px"></div>
     </div>
     <div class="card">
-      <div class="card-h"><h2>برنامه محاسبهشده</h2><div class="row">
-        <input type="date" id="plan-date" style="width:160px"><button class="btn sm" id="gen-btn">ساخت</button>
-        <button class="btn sm ghost" id="low-btn">حالت کمانرژی</button></div></div>
+      <div class="card-h"><h2>برنامه محاسبه‌شده</h2><div class="row">
+        <label for="plan-date" class="small">تاریخ شمسی</label><input type="text" id="plan-date" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۰۶" aria-describedby="plan-date-help" style="width:150px"><span id="plan-date-help" class="xs faint">سال/ماه/روز</span><button class="btn sm" id="gen-btn">ساخت</button>
+        <button class="btn sm ghost" id="low-btn">حالت کم‌انرژی</button></div></div>
       <div id="plan-metrics" class="row" style="margin-bottom:12px"></div>
       <div id="plan-warnings"></div>
-      <div class="timeline" id="plan-timeline"><div class="empty">برنامهای وجود ندارد.</div></div>
+      <div class="timeline" id="plan-timeline"><div class="empty">برنامه‌ای وجود ندارد.</div></div>
       <div id="plan-deferred" class="small" style="margin-top:10px"></div>
       <div class="hr"></div>
-      <div class="card-h"><h2 class="small">بازبرنامهریزی (سناریو B)</h2></div>
+      <div class="card-h"><h2 class="small">بازبرنامه‌ریزی (بازتنظیم روز)</h2></div>
       <div class="grid-form">
         <div class="field"><label>شناسه رویداد ثابت</label><input id="rp-event" type="number" placeholder="مثلاً ۱"></div>
-        <div class="field"><label>پایان جدید (دقیقه از نیمهشب)</label><input id="rp-end" type="number" placeholder="مثلاً ۹۰۰ یعنی ۱۵:۰۰"></div>
+        <div class="field"><label>پایان جدید (دقیقه از نیمه‌شب)</label><input id="rp-end" type="number" placeholder="مثلاً ۹۰۰ یعنی ۱۵:۰۰"></div>
       </div>
       <div class="row"><button class="btn sm" id="replan-btn">محاسبه مجدد باقی روز</button>
-        <span class="small faint">کارهای انجامشده حفظ و بقیه جابهجا میشوند.</span></div>
+        <span class="small faint">کارهای انجام‌شده حفظ و بقیه جابه‌جا می‌شوند.</span></div>
       <div id="replan-diff" class="small" style="margin-top:10px"></div>
     </div>
   </div>
@@ -60,7 +60,7 @@
       <div class="hr"></div>
       <div class="grid-form">
         <div class="field"><label>عنوان</label><input id="ev-title" placeholder="جلسه کاری"></div>
-        <div class="field"><label>دسته</label><select id="ev-cat"><option value="meeting">جلسه</option><option value="workout">ورزش</option><option value="meal">غذا</option><option value="commute">رفتآمد</option></select></div>
+        <div class="field"><label>دسته</label><select id="ev-cat"><option value="meeting">جلسه</option><option value="workout">ورزش</option><option value="meal">غذا</option><option value="commute">رفت‌وآمد</option></select></div>
         <div class="field"><label>شروع (دقیقه)</label><input id="ev-start" type="number" value="600"></div>
         <div class="field"><label>پایان (دقیقه)</label><input id="ev-end" type="number" value="660"></div>
       </div>
