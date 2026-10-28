@@ -2,6 +2,32 @@
 
 همهٔ نسخهها بر اساس [Keep a Changelog](https://keepachangelog.com/) و وضعیت واقعی تستها.
 
+## [0.2.0-rc.1] — 2026-10-28 — «بستهٔ قابل اجرا برای سیستم شما»
+
+### Added
+- `START_HERE.md`: راهنمای گام‌به‌گام ویندوز/لینوکس، اعتبارنامهٔ دمو، تنظیم GapGPT،
+  و جدول صادقانهٔ «چه چیزی تست‌شده و چه چیزی نه».
+- `scripts/setup.ps1` و `scripts/setup.sh`: نصب یک‌کلیکی (venv، وابستگی‌ها، ساخت `.env`
+  از نمونه، مهاجرت، اجرای تست‌ها). اسکریپت PowerShell عمداً **ASCII** است چون
+  PowerShell 5.1 متن UTF-8 بدون BOM را خراب می‌خواند.
+- `scripts/build_release.py`: ساخت آرشیو قابل تکرار (byte-for-byte) با فهرست مرتب و
+  زمان ثابت، به‌همراه `sha256`؛ خروجی پیش‌فرض `release/romka-v<version>.zip`.
+- `scripts/run_dev.ps1`: پشتیبانی از `-Port` و `-NoReload`.
+- ۲۷ تست جدید در `tests/test_release_package.py`: اعتبار zip، حضور فایل‌های لازم برای
+  نصب تازه، نبود وضعیت محلی/اسرار، نبود الگوی کلید واقعی، تکرارپذیری بایت‌ها،
+  ASCII بودن اسکریپت‌های PowerShell، و هم‌خوانی `START_HERE.md` با کد واقعی.
+
+### Fixed (باگ‌های بسته‌بندی که با استخراج واقعی پیدا شدند)
+- فایل‌های `romka.db-wal` و `romka.db-shm` (وضعیت محلی SQLite) وارد بسته می‌شدند.
+- قاعدهٔ حذف `.env.*` باعث می‌شد `.env.example` هم حذف شود؛ در نتیجه نصب تازه
+  نمی‌توانست `.env` بسازد و `setup.sh` با `cp: cannot stat '.env.example'` می‌شکست.
+
+### Verified (از صفر، فقط با محتوای همان zip)
+- استخراج در پوشهٔ خالی → `./scripts/setup.sh --skip-tests` → ساخت `.env`، مهاجرت
+  هر دو نسخه → `pytest -q` = **۱۲۶ passed** → بالا آمدن سرور روی پورت ۸۰۱۳:
+  `/api/v1/health` ۲۰۰، `/auth` ۲۰۰، ورود `demo@romka.local` ۲۰۰، ۳ وظیفهٔ نمونه.
+- هیچ فایل `*.db`، `.env`، `.romka_dev_secret` یا الگوی کلید در آرشیو نیست.
+
 ## [0.2.0] — 2026-10-28 — «برنامه‌ریزی که از واقعیت یاد می‌گیرد»
 
 ### Fixed (مدل داده)
@@ -36,7 +62,7 @@
   حفظ تخمین پس از تکمیل، رد مقادیر غیرممکن، اعداد مرور، جداسازی کاربران، و اسکریپت CLI.
 
 ### Verified
-- `pytest -q` → **۹۹ passed** · `ruff check` → پاک · `node --check` → OK ·
+- `pytest -q` → **۱۲۶ passed** · `ruff check` → پاک · `node --check` → OK ·
   `alembic upgrade/downgrade/upgrade` → موفق.
 
 ## [0.1.1] — 2026-10-28 — «ورود قابل‌اعتماد در پیش‌نمایش + مسیر GapGPT»

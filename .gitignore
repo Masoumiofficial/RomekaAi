@@ -27,3 +27,7 @@ node_modules/
 Thumbs.db
 .idea/
 .vscode/
+
+# Release artifacts are built by scripts/build_release.py and published as
+# GitHub release assets, not committed to the repository.
+release/

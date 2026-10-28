@@ -144,7 +144,7 @@ CSRF → ۴۰۳ و با CSRF → ۲۰۰، `/providers/verify` → `verified_live
 - `scripts/verify_provider.py`: تأیید زندهٔ GapGPT/هر درگاه سازگار از سیستم شما،
   با خواندن کلید از env و کد خروج صادقانه (بدون چاپ کلید).
 
-**تست‌ها:** `pytest -q` → **۹۹ passed** (۲۳ تست جدید) · `ruff` پاک · `node --check` OK ·
+**تست‌ها:** `pytest -q` → **۱۲۶ passed** (۲۷ تست بستهٔ انتشار + ۲۳ تست کالیبراسیون) · `ruff` پاک · `node --check` OK ·
 Alembic upgrade→downgrade→upgrade موفق.
 
 **تست زنده روی پورت ۸۰۰۰ (حساب دمو):**
