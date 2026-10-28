@@ -18,15 +18,16 @@
     let data; try { data = await res.json(); } catch (_) { throw new Error('پاسخ سرور نامعتبر است.'); }
     if (!res.ok || data.ok === false) {
       if (res.status === 404 && path === '/chat/send') setConversation(null);
-      throw new Error(data?.error?.message || `خطای ${res.status}`);
+      const error = new Error(data?.error?.message || `خطای ${res.status}`); error.status = res.status; throw error;
     }
     return data;
   }
   const status = message => { $('voice-status').textContent = message; };
-  let recognition = null, captureAllowed = false, lastReply = '', busy = false, pending = null;
+  let recognition = null, captureAllowed = false, lastReply = '', busy = false, pending = null, pendingPlan = null;
   const setBusy = value => {
     busy = value; $('voice-send').disabled = value; $('voice-action-apply').disabled = value;
     $('voice-mic').disabled = value || !!recognition; $('voice-new').disabled = value; $('voice-action-cancel').disabled = value;
+    $('voice-plan-apply').disabled = value; $('voice-plan-cancel').disabled = value;
   };
   const stopSpeaking = () => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); };
   function readReply() {
@@ -89,8 +90,10 @@
   $('voice-stop').addEventListener('click', () => { stopCapture(false); status('در حال پایان ضبط…'); });
   $('voice-read').addEventListener('click', readReply);
   $('voice-silence').addEventListener('click', () => { stopSpeaking(); status('پخش صدا متوقف شد.'); });
-  $('voice-new').addEventListener('click', () => { stopSpeaking(); setConversation(null); pending = null; $('voice-confirm').hidden = true; reply(''); status('گفت‌وگوی جدید آماده است.'); });
+  $('voice-new').addEventListener('click', () => { stopSpeaking(); setConversation(null); pending = null; pendingPlan = null; $('voice-confirm').hidden = true; $('voice-plan-confirm').hidden = true; reply(''); status('گفت‌وگوی جدید آماده است.'); });
   $('voice-action-cancel').addEventListener('click', () => { pending = null; $('voice-confirm').hidden = true; status('اقدام لغو شد؛ چیزی ثبت نشد.'); });
+
+  $('voice-plan-cancel').addEventListener('click', () => { pendingPlan = null; $('voice-plan-confirm').hidden = true; status('پیش‌نمایش لغو شد؛ برنامه‌ای تغییر نکرد.'); });
 
   // Fixed, local grammar and destinations: model responses never choose a URL or action.
   const destinations = {'داشبورد':'/', 'گفتگو':'/chat', 'گفت و گو':'/chat', 'چت':'/chat',
@@ -102,16 +105,33 @@
     const nav = normalized.match(/^(?:برو به|باز کن|صفحه)\s+(?:بخش\s+)?(.+?)(?:\s+(?:را|رو))?$/);
     if (nav && Object.hasOwn(destinations, nav[1])) return {type:'navigate', path:destinations[nav[1]]};
     if (/^(?:وظایف من|کارهای من|لیست وظایف|فهرست وظایف)$/.test(normalized)) return {type:'tasks'};
+    if (/^(?:برنامه امروز|برنامه امروز من|برنامه امروز را نشان بده|برنامه امروز رو نشون بده|نمایش برنامه امروز)$/.test(normalized)) return {type:'today'};
+    if (/^(?:پیش نمایش برنامه امروز|برنامه امروز را بساز|برنامه امروز رو بساز|برای امروز برنامه بساز)$/.test(normalized)) return {type:'plan-preview'};
     // Preserve the original title; normalized text is only for matching commands.
     const action = text.trim().match(/^(?:ثبت|ایجاد|افزودن)(?:\s+(?:یک|یه))?\s+(وظیفه|پروژه)(?:\s*[:：]\s*|\s+)?([\s\S]*)$/);
     if (action) return {type:action[1] === 'وظیفه' ? 'task' : 'project', name:action[2].trim()};
     return {type:'chat'};
   }
+  function formatPlan(plan, iso, preview) {
+    const date = window.RomkaDate?.display(iso) || iso || '—';
+    if (!plan) return `برای تاریخ ${date} برنامهٔ فعالی ثبت نشده است.`;
+    const lines = [preview ? `پیش‌نمایش ذخیره‌نشده برای ${date}` : `برنامهٔ فعال ${date}`,
+      plan.validation?.valid ? 'اعتبار محاسبه: معتبر' : 'هشدار: برنامه معتبر نیست و قابل فعال‌سازی از این پنل نیست.'];
+    const blocks = Array.isArray(plan.blocks) ? plan.blocks : [];
+    if (!blocks.length) lines.push('بازه‌ای در برنامه وجود ندارد.');
+    for (const block of blocks) lines.push(`${block.start || '—'} تا ${block.end || '—'}: ${block.title || 'بدون عنوان'}`);
+    for (const warning of plan.warnings || []) lines.push(`هشدار: ${warning}`);
+    for (const conflict of plan.conflicts || []) lines.push(`تعارض: ${conflict.message || 'تعارض زمان‌بندی'}`);
+    for (const violation of plan.validation?.violations || []) lines.push(`خطای اعتبار: ${violation}`);
+    for (const item of plan.deferred || []) lines.push(`به‌تعویق‌افتاده: ${item.title || 'بدون عنوان'} — ${item.message || 'دلیل ثبت نشده'}`);
+    if (plan.calibration?.note) lines.push(`کالیبراسیون: ${plan.calibration.note}`);
+    return lines.join('\n');
+  }
   $('voice-send').addEventListener('click', async () => {
     if (busy) return;
     if (recognition) { status('ابتدا ضبط را متوقف کنید و متن را بررسی کنید.'); return; }
     const text = $('voice-text').value.trim(); if (!text) { status('متن پیام خالی است.'); return; }
-    pending = null; $('voice-confirm').hidden = true;
+    pending = null; pendingPlan = null; $('voice-confirm').hidden = true; $('voice-plan-confirm').hidden = true;
     const command = parse(text);
     if (command.type === 'navigate') { window.location.assign(command.path); return; }
     if (command.type === 'task' || command.type === 'project') {
@@ -133,6 +153,16 @@
         const data = await api('/planner/tasks');
         const items = data.items.filter(x => x.status !== 'done');
         reply(items.length ? `وظایف باز (${items.length}):\n` + items.slice(0,10).map((x,i)=>`${i+1}. ${x.title}`).join('\n') + (items.length > 10 ? '\nبرای بقیه به برنامه‌ریز بروید.' : '') : 'وظیفهٔ بازی وجود ندارد.');
+      } else if (command.type === 'today') {
+        const data = await api('/planner/today');
+        reply(formatPlan(data.plan, data.date, false));
+        finalStatus = 'برنامهٔ فعال دریافت شد؛ چیزی تغییر نکرد.';
+      } else if (command.type === 'plan-preview') {
+        const data = await api('/planner/preview', {energy_mode:'normal'});
+        reply(formatPlan(data.plan, data.plan?.date, true));
+        pendingPlan = data.token || null;
+        $('voice-plan-confirm').hidden = !pendingPlan;
+        finalStatus = pendingPlan ? 'پیش‌نمایش آماده است؛ هنوز چیزی ثبت نشده است.' : 'این پیش‌نمایش معتبر نیست؛ تعارض‌ها را در پاسخ بررسی کنید.';
       } else {
         const data = await api('/chat/send', {text, conversation_id:getConversation(), include_history:$('voice-history').checked, allow_remember:false});
         if (Number.isSafeInteger(data.conversation_id) && data.conversation_id > 0) setConversation(data.conversation_id);
@@ -145,6 +175,20 @@
       if (lastReply && $('voice-auto-speak').checked && !$('voice-panel').hidden) readReply();
     } catch (e) { status(e.message); }
     finally { setBusy(false); }
+  });
+  $('voice-plan-apply').addEventListener('click', async () => {
+    if (busy || !pendingPlan) return;
+    const token = pendingPlan; setBusy(true); status('در حال فعال‌سازی برنامه…');
+    try {
+      const data = await api('/planner/preview/confirm', {token});
+      pendingPlan = null; $('voice-plan-confirm').hidden = true;
+      reply(formatPlan(data.plan, data.plan?.date, false));
+      status('برنامه فعال شد؛ برای به‌روزرسانی صفحهٔ فعلی آن را بازخوانی کنید.');
+      if (lastReply && $('voice-auto-speak').checked && !$('voice-panel').hidden) readReply();
+    } catch (e) {
+      pendingPlan = null; $('voice-plan-confirm').hidden = true;
+      status(e.status >= 400 && e.status < 500 ? e.message : 'نتیجهٔ فعال‌سازی نامشخص است؛ ابتدا برنامهٔ فعال را بررسی کنید.');
+    } finally { setBusy(false); }
   });
   $('voice-action-apply').addEventListener('click', async () => {
     if (busy || !pending) return;

@@ -2,21 +2,28 @@
 from __future__ import annotations
 
 from datetime import date
+import hashlib
+import hmac
+import json
+
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, get_auth_context
-from app.core.errors import NotFound, ValidationFailed
+from app.config import Settings, get_settings
+from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.core.timeutil import local_minute_to_utc, today_in
-from app.db.models import FixedEvent, Plan, Task, UserProfile
+from app.db.models import FixedEvent, Plan, Task, User, UserProfile
 from app.db.session import get_db
 from app.planning.engine import expand_recurrence, light_day_plan
 from app.planning.review import calibration, daily_review, weekly_load
 from app.planning.service import (
     complete_task, generate, load_fixed, load_tasks, constraints_from_profile,
-    parse_natural_request,
+    parse_natural_request, persist_plan,
 )
 
 router = APIRouter(prefix="/planner", tags=["planner"])
@@ -201,6 +208,90 @@ def today(day: str | None = Query(default=None),
             .order_by(Plan.version.desc()).first())
     return {"ok": True, "date": d.isoformat(), "plan": plan.payload if plan else None,
             "plan_db_id": plan.id if plan else None}
+
+
+# Preview tokens contain only a digest and identifiers, never plan contents.
+# They are scoped to one user, expire and are rejected after the active plan or
+# computed preview changes. Existing plan rows are not deleted.
+PREVIEW_MAX_AGE = 15 * 60
+
+
+class PreviewConfirmIn(BaseModel):
+    token: str = Field(min_length=1, max_length=4096)
+
+
+def _preview_serializer(settings: Settings) -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(settings.secret_key, salt="romka-plan-preview-v1")
+
+
+def _preview_digest(plan: dict) -> str:
+    encoded = json.dumps(plan, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _active_plan_id(db: Session, user_id: int, day: date) -> int | None:
+    row = (db.query(Plan).filter(Plan.user_id == user_id, Plan.date == day,
+                                 Plan.is_active.is_(True))
+           .order_by(Plan.version.desc(), Plan.id.desc()).first())
+    return row.id if row else None
+
+
+def _compute_preview(db: Session, ctx: AuthContext, day: date,
+                     energy_mode: str, apply_calibration: bool) -> dict:
+    profile = db.query(UserProfile).filter(UserProfile.user_id == ctx.user.id).first()
+    return generate(db, user_id=ctx.user.id, day=day, profile=profile,
+                    energy_mode=energy_mode, tz_name=ctx.user.timezone,
+                    apply_calibration=apply_calibration, persist=False)
+
+
+@router.post("/preview")
+def preview_plan(p: GenerateIn, ctx: AuthContext = Depends(get_auth_context),
+                 db: Session = Depends(get_db), settings: Settings = Depends(get_settings)) -> dict:
+    """Compute without saving; require a separate, fresh user confirmation."""
+    day = _day(p.date, ctx.user.timezone)
+    active_id = _active_plan_id(db, ctx.user.id, day)
+    plan = _compute_preview(db, ctx, day, p.energy_mode, p.apply_calibration)
+    token = None
+    if plan.get("validation", {}).get("valid") is True:
+        token = _preview_serializer(settings).dumps({
+            "uid": ctx.user.id, "date": day.isoformat(), "energy": p.energy_mode,
+            "calibration": p.apply_calibration, "active_id": active_id,
+            "digest": _preview_digest(plan),
+        })
+    return {"ok": True, "plan": plan, "active_plan_id": active_id, "token": token,
+            "expires_in_seconds": PREVIEW_MAX_AGE}
+
+
+@router.post("/preview/confirm")
+def confirm_preview(p: PreviewConfirmIn, ctx: AuthContext = Depends(get_auth_context),
+                    db: Session = Depends(get_db), settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        payload = _preview_serializer(settings).loads(p.token, max_age=PREVIEW_MAX_AGE)
+    except (BadSignature, SignatureExpired, ValueError, TypeError):
+        raise Conflict("پیش‌نمایش نامعتبر یا منقضی است؛ دوباره آن را بسازید.") from None
+    if (not isinstance(payload, dict) or payload.get("uid") != ctx.user.id
+            or payload.get("energy") not in ("normal", "low")
+            or not isinstance(payload.get("calibration"), bool)
+            or not isinstance(payload.get("digest"), str)
+            or not isinstance(payload.get("date"), str)):
+        raise Conflict("پیش‌نمایش معتبر نیست؛ دوباره آن را بسازید.")
+    day = _day(payload["date"], ctx.user.timezone)
+    # Serialize competing confirmations. SQLite needs an actual (no-op) write
+    # to acquire its write lock; PostgreSQL uses a row lock. Other independent
+    # writers are not required to take this lock on PostgreSQL.
+    if db.get_bind().dialect.name == "sqlite":
+        db.execute(update(User).where(User.id == ctx.user.id).values(is_active=User.is_active))
+    else:
+        db.query(User.id).filter(User.id == ctx.user.id).with_for_update().one()
+    if _active_plan_id(db, ctx.user.id, day) != payload.get("active_id"):
+        raise Conflict("برنامهٔ فعال تغییر کرده است؛ پیش‌نمایش را دوباره بسازید.")
+    plan = _compute_preview(db, ctx, day, payload["energy"], payload["calibration"])
+    if not plan.get("validation", {}).get("valid") or not hmac.compare_digest(
+            _preview_digest(plan), payload["digest"]):
+        raise Conflict("اطلاعات یا برنامه تغییر کرده است؛ پیش‌نمایش را دوباره بسازید.")
+    saved = persist_plan(db, user_id=ctx.user.id, day=day, result=plan, energy_mode=payload["energy"])
+    plan["plan_id"] = saved.id
+    return {"ok": True, "plan": plan, "plan_db_id": saved.id}
 
 
 @router.post("/generate")

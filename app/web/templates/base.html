@@ -31,7 +31,7 @@
     <div class="card flat" style="padding:12px">
       <div class="chip-mini"><span>موتور هوش مصنوعی</span><span id="sb-provider" class="faint">…</span></div>
       <div class="chip-mini" style="margin-top:6px"><span>برنامه</span><span id="sb-plan" class="faint">…</span></div>
-      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.15</span></div>
+      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.16</span></div>
     </div>
     <div class="sidebar-foot">
       <div class="small faint" style="margin-bottom:8px">{{ user.display_name or user.email }}</div>
@@ -77,8 +77,14 @@
       <div class="row"><button type="button" class="btn sm primary" id="voice-action-apply">تأیید و ثبت</button>
       <button type="button" class="btn sm ghost" id="voice-action-cancel">انصراف</button></div>
     </div>
+    <div id="voice-plan-confirm" class="voice-confirm" hidden>
+      <h3>تأیید برنامهٔ پیش‌نمایش‌شده</h3>
+      <p class="small muted">کل برنامه و هشدارها در پاسخ بالا نمایش داده شده‌اند. تأیید، برنامه را فعال و وظایف زمان‌بندی‌شده را علامت‌گذاری می‌کند؛ برنامهٔ قبلی حذف نمی‌شود. پیش‌نمایش ۱۵ دقیقه اعتبار دارد.</p>
+      <div class="row"><button type="button" class="btn sm primary" id="voice-plan-apply">تأیید و فعال‌سازی برنامه</button>
+        <button type="button" class="btn sm ghost" id="voice-plan-cancel">انصراف</button></div>
+    </div>
     <details class="small"><summary>دستورهای پشتیبانی‌شده</summary>
-      <p>«برو به برنامه‌ریز»، «وظایف من»، «ثبت وظیفه خرید»، «ثبت پروژه خانه». درخواست‌های دیگر به گفت‌وگو فرستاده می‌شوند؛ اجرای خودکار همهٔ کارها پشتیبانی نمی‌شود.</p></details>
+      <p>«برو به برنامه‌ریز»، «وظایف من»، «برنامه امروز»، «پیش‌نمایش برنامه امروز»، «ثبت وظیفه خرید»، «ثبت پروژه خانه». درخواست‌های دیگر به گفت‌وگو فرستاده می‌شوند؛ اجرای خودکار همهٔ کارها پشتیبانی نمی‌شود.</p></details>
   </section>
   <button type="button" class="btn primary voice-launch" id="voice-open" aria-controls="voice-panel" aria-expanded="false">دستیار صوتی</button>
 </div>
