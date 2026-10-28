@@ -237,3 +237,8 @@ th { color: var(--faint); font-weight: 600; font-size: 11px; }
 
 /* Latin identifiers stay readable within RTL text. Date input accepts Persian digits. */
 #plan-date, #proj-due { direction: ltr; text-align: center; }
+
+/* Optional, editable feedback beside each persisted assistant response. */
+.feedback-controls { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:6px; }
+.feedback-controls button[aria-pressed="true"] { border-color:var(--accent); color:var(--text); background:var(--surface-2); }
+.feedback-controls select { width:auto; max-width:160px; }

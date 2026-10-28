@@ -17,14 +17,14 @@
 
 | | |
 |---|---|
-| **آرشیو کامل** | [`downloads/romka-v0.2.12.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.12.zip) |
-| **نسخهٔ Core (دوست آنتی‌ویروس)** | [`downloads/romka-v0.2.12-core.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.12-core.zip) |
+| **آرشیو کامل** | [`downloads/romka-v0.2.13.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.13.zip) |
+| **نسخهٔ Core (دوست آنتی‌ویروس)** | [`downloads/romka-v0.2.13-core.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.13-core.zip) |
 | **چک‌سام هر دو** | [`downloads/CHECKSUMS.txt`](https://github.com/Masoumiofficial/RomekaAi/blob/arena/4ebd498f-romekaai/downloads/CHECKSUMS.txt) (یک فایل، بدون دانلود) |
 | **راهنمای نصب** | [`START_HERE.md`](START_HERE.md) |
 
 ```bash
-# ویندوز (PowerShell):  Expand-Archive romka-v0.2.12.zip -DestinationPath C:\ ; cd C:\romka
-unzip romka-v0.2.12.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
+# ویندوز (PowerShell):  Expand-Archive romka-v0.2.13.zip -DestinationPath C:\ ; cd C:\romka
+unzip romka-v0.2.13.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
 ./scripts/setup.sh && ./scripts/run_dev.sh      # ویندوز: .\scripts\setup.ps1 و .\scripts\run_dev.ps1
 ```
 

@@ -75,6 +75,7 @@ if (-not $SkipChecks -and $hasDoctor) {
     if ($LASTEXITCODE -ne 0) { throw "alembic upgrade failed" }
 } else {
     & $py -m alembic upgrade head
+    if ($LASTEXITCODE -ne 0) { throw "alembic upgrade failed; server was not started" }
 }
 
 $uvicornArgs = @("-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "$Port")

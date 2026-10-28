@@ -19,7 +19,7 @@ from app.skills.registry import skill_registry
 
 router = APIRouter(tags=["system"])
 
-VERSION = "0.2.12"
+VERSION = "0.2.13"
 
 
 def _demo_status(settings: Settings, request: Request) -> dict:
@@ -159,7 +159,7 @@ def approve_action(action_id: int, approve: bool = True,
 def export_data(ctx: AuthContext = Depends(get_auth_context),
                 db: Session = Depends(get_db)) -> dict:
     """User-controlled data export. Sensitive values are included by design here."""
-    from app.db.models import Conversation, Goal, Message, Plan, Project, Task
+    from app.db.models import Conversation, Goal, Message, MessageFeedback, Plan, Project, Task
     uid = ctx.user.id
     return {"ok": True, "generated_at": datetime.now(timezone.utc).isoformat(),
             "warning": "این خروجی حاوی اطلاعات شخصی است؛ در جای امن نگهداری کنید.",
@@ -175,6 +175,8 @@ def export_data(ctx: AuthContext = Depends(get_auth_context),
                 "messages": [{"role": m.role, "content": m.content} for m in
                              db.query(Message).join(Conversation)
                              .filter(Conversation.user_id == uid).all()],
+                "feedback": [{"message_id": f.message_id, "rating": f.rating, "reason": f.reason}
+                             for f in db.query(MessageFeedback).filter(MessageFeedback.user_id == uid).all()],
                 "plans": [{"date": p.date.isoformat(), "version": p.version} for p in
                           db.query(Plan).filter(Plan.user_id == uid).all()],
             }}

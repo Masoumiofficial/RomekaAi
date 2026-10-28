@@ -243,7 +243,40 @@
     const renderMsg = (m) => `<div class="msg ${m.role}"><div class="bubble">${esc(m.content)}</div>
       <div class="msg-meta"><span>${m.role === "user" ? "شما" : "رومکا"}</span>
       ${(m.active_agent_ids||[]).length?`<span class="tag accent">${esc(m.active_agent_ids.join(" + "))}</span>`:""}
-      ${m.confidence?`<span>اطمینان ${Math.round(m.confidence*100)}٪</span>`:""}</div></div>`;
+      ${m.confidence?`<span>اطمینان ${Math.round(m.confidence*100)}٪</span>`:""}</div>
+      ${m.role === "assistant" && Number.isInteger(m.id) ? `<div class="feedback-controls" data-feedback-message="${m.id}">
+        <span class="xs faint">این پاسخ چطور بود؟</span>
+        <button type="button" class="btn sm ghost" data-feedback="helpful" aria-pressed="${m.feedback?.rating === "helpful"}">مفید</button>
+        <button type="button" class="btn sm ghost" data-feedback="not_helpful" aria-pressed="${m.feedback?.rating === "not_helpful"}">نیاز به بهبود</button>
+        ${m.feedback?.rating === "not_helpful" ? `<label class="xs">دلیل (اختیاری)
+          <select data-feedback-reason aria-label="دلیل نیاز به بهبود"><option value="">انتخاب کنید</option>
+          ${[["incorrect","نادرست"],["irrelevant","نامرتبط"],["unclear","نامفهوم"],["unsafe","ناایمن"],["other","سایر"]].map(([v,l])=>`<option value="${v}" ${m.feedback.reason === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>` : ""}
+        ${m.feedback ? `<button type="button" class="btn sm ghost" data-feedback="delete">حذف بازخورد</button>` : ""}</div>` : ""}</div>`;
+    const loadFeedbackSummary = async () => {
+      try { const r = await api("/chat/feedback/summary");
+        setHTML("feedback-summary", `${r.total} پاسخ ارزیابی‌شده · ${r.helpful} مفید · ${r.not_helpful} نیازمند بهبود`);
+      } catch(e) { setHTML("feedback-summary", errBox(e)); }
+    };
+    $("chat-log").addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-feedback]");
+      const panel = button?.closest("[data-feedback-message]");
+      if (!panel) return;
+      button.disabled = true;
+      try {
+        const id = panel.dataset.feedbackMessage, rating = button.dataset.feedback;
+        if (rating === "delete") await api(`/chat/messages/${id}/feedback`, {method:"DELETE"});
+        else await api(`/chat/messages/${id}/feedback`, {method:"PUT", body:{rating, reason:rating === "not_helpful" ? (panel.querySelector("[data-feedback-reason]")?.value || "") : ""}});
+        await Promise.all([loadMsgs(), loadFeedbackSummary()]); toast("بازخورد ذخیره شد.");
+      } catch(e) { toast(e.message, true); button.disabled = false; }
+    });
+    $("chat-log").addEventListener("change", async (event) => {
+      if (!event.target.matches("[data-feedback-reason]")) return;
+      const panel = event.target.closest("[data-feedback-message]");
+      try { await api(`/chat/messages/${panel.dataset.feedbackMessage}/feedback`,
+          {method:"PUT", body:{rating:"not_helpful", reason:event.target.value}});
+        toast("دلیل بازخورد ذخیره شد.");
+      } catch(e) { toast(e.message, true); }
+    });
     const loadConvs = async () => {
       try { const r = await api("/chat/conversations");
         setHTML("conv-list", r.items.length ? r.items.map(c=>`<div class="conv-item ${c.id===convId?"active":""}" data-id="${c.id}">${esc(c.title)} <span class="faint xs">#${c.id}</span></div>`).join("") : `<div class="empty">گفت‌وگویی نیست.</div>`);
@@ -305,7 +338,7 @@
               if(ev.event==="done") meta=ev.meta; if(ev.event==="error") full+=ev.message; }
           }
           holder.outerHTML = renderMsg({role:"assistant",content:full,active_agent_ids:meta?.active_agents||[],confidence:meta?.critic?.score});
-          if(meta){ convId=meta.conversation_id; loadConvs(); setHTML("chat-meta",`<div class="notice ok">پاسخ جریانی کامل شد. سابقه ارسال‌شده: ${meta.history_turns_used ?? 0} رفت‌وبرگشت. نقد: ${esc(meta.critic.verdict)} (${meta.critic.score})</div>`); }
+          if(meta){ convId=meta.conversation_id; loadMsgs(); loadConvs(); setHTML("chat-meta",`<div class="notice ok">پاسخ جریانی کامل شد. سابقه ارسال‌شده: ${meta.history_turns_used ?? 0} رفت‌وبرگشت. نقد: ${esc(meta.critic.verdict)} (${meta.critic.score})</div>`); }
         }
       } catch(e){ holder.outerHTML = `<div class="msg assistant"><div class="bubble">${esc(e.message)}</div></div>`; }
     };
@@ -313,7 +346,7 @@
     $("chat-text")?.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
     $("new-conv")?.addEventListener("click",()=>{convId=null;setHTML("chat-log",`<div class="empty">گفت‌وگوی جدید.</div>`);loadConvs();});
     $("stream-toggle")?.addEventListener("click",()=>{streaming=!streaming;$("stream-toggle").textContent=`⇢ جریانی: ${streaming?"روشن":"خاموش"}`;});
-    loadConvs();
+    loadConvs(); loadFeedbackSummary();
   }
 
   /* ── planner ── */

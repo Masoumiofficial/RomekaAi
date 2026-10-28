@@ -148,7 +148,7 @@ def test_business_app_that_is_not_romka_is_still_reported_as_busy():
 
 def test_latest_revision_comes_from_the_migration_files():
     head = doctor.latest_revision()
-    assert head == "66c743d0c078", f"unexpected migration head: {head}"
+    assert head == "ab73f831b214", f"unexpected migration head: {head}"
 
 
 def test_doctor_cli_exits_zero_on_a_healthy_port(romka_like_server):
@@ -301,5 +301,5 @@ def test_doctor_never_needs_third_party_packages():
                              "print(doctor.latest_revision())"],
                             capture_output=True, text=True, cwd=doctor.ROOT)
     assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "66c743d0c078"
+    assert result.stdout.strip() == "ab73f831b214"
     time.sleep(0)  # keep the import of time meaningful for linters
