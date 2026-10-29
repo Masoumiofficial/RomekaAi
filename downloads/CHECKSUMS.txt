@@ -1,10 +1,12 @@
 ROMKA archive SHA-256 checksums
 
-Windows PowerShell: Get-FileHash -Algorithm SHA256 .\romka-v0.2.20-core.zip
-Linux/macOS: sha256sum romka-v0.2.20-core.zip
+Windows PowerShell: Get-FileHash -Algorithm SHA256 .\romka-v0.2.21-core.zip
+Linux/macOS: sha256sum romka-v0.2.21-core.zip
 
 Matching hashes show the file matches the published bytes; they do not prove that the file is safe. Investigate antivirus warnings and see docs/ANTIVIRUS.md.
 
+6265a7ac1be3373d1710b0f45f605103cea92faacad5dc1e355f764c614e278a  romka-v0.2.21.zip  (476,424 bytes)
+b35c76cd9b36d0229160381eea19beb20e454a291461d1b6ecedf5027f3ea169  romka-v0.2.21-core.zip  (460,333 bytes)
 0f53c5f8ece78178f40112b03a0074dc42c66822bc85557cd3811209b724b0a9  romka-v0.2.20.zip  (465,039 bytes)
 bd728c680ced9f91eb8bc75903af68138b75a0f647540cb61236257697dec845  romka-v0.2.20-core.zip  (448,948 bytes)
 3e07bebe53ed2e2e4349ddfabae256231b769925343ecea28f792995586790b8  romka-v0.2.19.zip  (464,074 bytes)
