@@ -17,7 +17,7 @@ def test_voice_widget_is_on_every_workspace_page(client):
         assert response.status_code == 200
         for item in ("voice-widget", "voice-mic", "voice-text", "voice-confirm", "voice-plan-confirm", "voice-today", "voice-preview",
                      "wake-enabled", "wake-words", "wake-start", "wake-stop", "wake-status",
-                     '/static/js/voice.js?v=0.2.21'):
+                     '/static/js/voice.js?v=0.2.22'):
             assert item in response.text
         assert 'id="voice-panel" class="voice-panel card" aria-label="دستیار صوتی رومکا" hidden' in response.text
     assert client.get('/static/js/voice.js').status_code == 200

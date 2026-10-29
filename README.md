@@ -17,14 +17,15 @@
 
 | | |
 |---|---|
-| **آرشیو کامل** | [`downloads/romka-v0.2.21.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.21.zip) |
-| **نسخهٔ Core (دوست آنتی‌ویروس)** | [`downloads/romka-v0.2.19-core.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.19-core.zip) |
+| **آرشیو کامل** | [`downloads/romka-v0.2.22.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.22.zip) |
+| **نسخهٔ Core (دوست آنتی‌ویروس)** | [`downloads/romka-v0.2.22-core.zip`](https://github.com/Masoumiofficial/RomekaAi/raw/arena/4ebd498f-romekaai/downloads/romka-v0.2.22-core.zip) |
 | **چک‌سام هر دو** | [`downloads/CHECKSUMS.txt`](https://github.com/Masoumiofficial/RomekaAi/blob/arena/4ebd498f-romekaai/downloads/CHECKSUMS.txt) (یک فایل، بدون دانلود) |
 | **راهنمای نصب** | [`START_HERE.md`](START_HERE.md) |
+| **راهنمای به‌روزرسانی** | [`docs/UPDATE.md`](docs/UPDATE.md) |
 
 ```bash
-# ویندوز (PowerShell):  Expand-Archive romka-v0.2.21.zip -DestinationPath C:\ ; cd C:\romka
-unzip romka-v0.2.21.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
+# ویندوز (PowerShell):  Expand-Archive romka-v0.2.22.zip -DestinationPath C:\ ; cd C:\romka
+unzip romka-v0.2.22.zip && cd romka        # خود آرشیو پوشهٔ romka را می‌سازد
 ./scripts/setup.sh && ./scripts/run_dev.sh      # ویندوز: .\scripts\setup.ps1 و .\scripts\run_dev.ps1
 ```
 
@@ -58,7 +59,7 @@ unzip romka-v0.2.21.zip && cd romka        # خود آرشیو پوشهٔ romka 
 | ارائهدهنده LLM خارجی | ⚠️ Implemented, **live Verified: خیر** | آداپتور OpenAI-compatible نوشته شده؛ بدون کلید تست نشده |
 | Claude / Gemini بومی، MCP، صدا، اپ موبایل | ❌ Planned | عمداً در این فاز ساخته نشدند |
 
-**تستها:** ۲۲۰ تست در مخزن و ۱۹۲ تست در بستهٔ Core از پوشهٔ خالی اجرا و عبور کردهاند.
+**تستها:** ۲۲۲ تست در مخزن و ۱۹۸ تست در بستهٔ Core از پوشهٔ خالی اجرا و عبور کردهاند.
 **پیشنمایش زنده:** سرور توسعه روی پورت ۸۰۰۰ در حال اجراست (`/auth` نقطه ورود).
 
 ---

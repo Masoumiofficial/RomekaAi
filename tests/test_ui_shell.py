@@ -54,7 +54,7 @@ def test_every_page_is_reachable_and_has_the_accessible_shell(client):
         # cache-busting: every local script carries the app version
         for src in re.findall(r'<script src="(/static/js/[^"]+)"', text):
             assert "?v=" in src, f"{page}: {src} is not versioned"
-    assert "romka.css?v=0.2.21" in client.get("/").text
+    assert "romka.css?v=0.2.22" in client.get("/").text
     assert client.get("/static/css/romka.css").status_code == 200
     assert client.get("/static/fonts/vazirmatn-arabic-400-normal.woff2").status_code == 200
 

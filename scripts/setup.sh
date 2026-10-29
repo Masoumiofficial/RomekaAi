@@ -18,6 +18,17 @@ for arg in "$@"; do
   esac
 done
 
+# Release archives stamp every file with ONE fixed mtime so a rebuild is
+# byte-identical. Extracting a new archive over an older install therefore
+# leaves a __pycache__ entry whose recorded (mtime, size) can still match the new
+# source - Python then imports the OLD bytecode and the app runs half-updated:
+# new templates and CSS, previous Python. That is silent and hard to diagnose,
+# so drop the caches before anything is imported. .venv is excluded because the
+# archive never ships it, and Python rebuilds what it deletes.
+echo "== clearing stale bytecode caches =="
+find . -name '__pycache__' -type d -not -path './.venv/*' -prune -exec rm -rf {} + 2>/dev/null || true
+find . -name '*.py[co]' -not -path './.venv/*' -delete 2>/dev/null || true
+
 # A .venv can exist and still be unusable (interrupted creation, half-deleted
 # folder, moved project): python exists but pyvenv.cfg does not, and every later
 # command dies. Probe it, do not just look for the file.

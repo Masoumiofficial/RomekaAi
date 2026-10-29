@@ -337,3 +337,73 @@ def test_setup_repairs_a_broken_venv_instead_of_wedging():
     assert "-RecreateVenv" in ps1 and "RECREATE_VENV" in sh
     # dependencies must not be installed into a venv that cannot run
     assert ps1.index("Test-VenvHealthy $venvDir $venvPy") < ps1.index("pip install -r")
+
+
+def test_setup_clears_stale_bytecode_before_running_python():
+    """A real bug found by updating 0.2.20 -> 0.2.21 over the same folder.
+
+    Release archives stamp every file with ONE fixed mtime so a rebuild is
+    byte-identical. After extracting the new archive over an old install, a
+    ``__pycache__`` entry can still match its new source on (mtime, size) - the
+    version string '0.2.20' -> '0.2.21' is the same length - and Python then
+    imports the OLD bytecode. The app runs half-updated: new templates and CSS,
+    previous Python, and ``import app`` reporting the old version.
+
+    The setup scripts must drop the caches, and must do it before anything is
+    imported, so a stale ``.pyc`` can never outlive an update.
+    """
+    ps1 = (build_release.ROOT / "scripts" / "setup.ps1").read_text(encoding="utf-8")
+    sh = (build_release.ROOT / "scripts" / "setup.sh").read_text(encoding="utf-8")
+    # anchor on the CALL, not the definition: 'Resolve-Python' and
+    # 'venv_healthy' are defined long before they run anything.
+    ps1_anchor = "$py = Resolve-Python $PythonExe"
+    sh_anchor = '"$PY" -m venv'
+    # The purge COMMAND, not a comment that merely names __pycache__: a doc
+    # mention would otherwise satisfy the ordering check on its own.
+    ps1_purge = "-Filter '__pycache__'"
+    sh_purge = "find . -name '__pycache__'"
+    for text, purge, first_python in (
+        (ps1, ps1_purge, ps1_anchor),
+        (sh, sh_purge, sh_anchor),
+    ):
+        assert purge in text, f"no bytecode purge command: {purge!r}"
+        assert text.index(purge) < text.index(first_python), (
+            "the purge must run before the first python call, or the stale "
+            "bytecode is already imported"
+        )
+        assert "rm -rf" in text or "Remove-Item" in text, "the purge never deletes anything"
+    # .venv bytecode is not shipped by the archive, so it must be spared
+    assert "notlike '*\\.venv\\*'" in ps1 and "not -path './.venv/*'" in sh
+
+
+def test_setup_sh_purge_actually_removes_stale_bytecode(tmp_path):
+    """The guard above could be satisfied by a no-op, so run the real thing.
+
+    Builds a tiny tree that reproduces the reported state - a ``__pycache__``
+    whose recorded source mtime still matches the replaced file - and asserts
+    the shipped purge logic empties it while leaving ``.venv`` alone.
+    """
+    if sys.platform == "win32":
+        pytest.skip("bash-only check; the PowerShell purge is guarded above")
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "__pycache__").mkdir()
+    stale = tmp_path / "app" / "__pycache__" / "mod.cpython-311.pyc"
+    stale.write_bytes(b"\x00\x01\x02")
+    (tmp_path / "app" / "mod.py").write_text("VERSION = 2\n", encoding="utf-8")
+    (tmp_path / ".venv" / "lib" / "site-packages").mkdir(parents=True)
+    keep = tmp_path / ".venv" / "lib" / "site-packages" / "thing.pyc"
+    keep.write_bytes(b"\x00\x01\x02")
+
+    # the same find expressions setup.sh uses
+    subprocess.run(
+        ["find", ".", "-name", "__pycache__", "-type", "d",
+         "-not", "-path", "./.venv/*", "-prune", "-exec", "rm", "-rf", "{}", "+"],
+        cwd=tmp_path, check=True,
+    )
+    subprocess.run(
+        ["find", ".", "-name", "*.py[co]", "-not", "-path", "./.venv/*", "-delete"],
+        cwd=tmp_path, check=True,
+    )
+
+    assert not stale.exists(), "stale bytecode survived the purge"
+    assert keep.exists(), "the purge reached into .venv"

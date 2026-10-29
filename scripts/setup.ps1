@@ -77,6 +77,27 @@ function Resolve-Python {
            "If it is installed elsewhere: .\scripts\setup.ps1 -PythonExe ""C:\Python313\python.exe""")
 }
 
+# Release archives stamp every file with ONE fixed mtime so a rebuild is
+# byte-identical. Extracting a new archive over an older install therefore
+# leaves a __pycache__ entry whose recorded (mtime, size) can still match the new
+# source - Python then imports the OLD bytecode and the app runs half-updated:
+# new templates and CSS, previous Python. That is silent and hard to diagnose,
+# so drop the caches before anything is imported. .venv is excluded because the
+# archive never ships it, and Python rebuilds what it deletes.
+$staleCaches = @(Get-ChildItem -Path $root -Recurse -Directory -Filter '__pycache__' -ErrorAction SilentlyContinue |
+  Where-Object { $_.FullName -notlike '*\.venv\*' })
+if ($staleCaches.Count -gt 0) {
+  Write-Host "clearing $($staleCaches.Count) stale bytecode cache folder(s)..." -ForegroundColor Yellow
+  $staleCaches | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
+# -Include needs a wildcard path to be reliable across PowerShell 5.1 and 7, so
+# the extensions are matched in Where-Object instead.
+$stalePyc = @(Get-ChildItem -Path $root -Recurse -File -ErrorAction SilentlyContinue |
+  Where-Object { ($_.Extension -eq '.pyc' -or $_.Extension -eq '.pyo') -and $_.FullName -notlike '*\.venv\*' })
+if ($stalePyc.Count -gt 0) {
+  $stalePyc | Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
 $py = Resolve-Python $PythonExe
 
 $venvDir = Join-Path $root ".venv"
