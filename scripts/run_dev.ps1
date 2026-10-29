@@ -7,8 +7,27 @@ param(
 )
 $ErrorActionPreference = "Stop"
 Set-Location (Join-Path $PSScriptRoot "..")
+# The venv is created by setup.ps1. If it is missing we used to fall back to the
+# system "py", which then failed with "No module named alembic" - a confusing
+# dead end for anyone who extracted the zip and ran this first. Say what to do.
 $py = ".\.venv\Scripts\python.exe"
-if (-not (Test-Path $py)) { $py = "py" }
+if (-not (Test-Path $py)) {
+    Write-Host ""
+    Write-Host "The virtual environment is missing: $py" -ForegroundColor Red
+    Write-Host "This folder was extracted but setup never ran here." -ForegroundColor Yellow
+    Write-Host "Run these two commands, in this order:" -ForegroundColor Yellow
+    Write-Host "  powershell -ExecutionPolicy RemoteSigned -File .\scripts\setup.ps1" -ForegroundColor Yellow
+    Write-Host "  powershell -ExecutionPolicy RemoteSigned -File .\scripts\run_dev.ps1" -ForegroundColor Yellow
+    exit 1
+}
+try { & $py -c "import sys" | Out-Null } catch { }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "The virtual environment is broken: $py does not run." -ForegroundColor Red
+    Write-Host "Rebuild it - your .env and your database are not touched:" -ForegroundColor Yellow
+    Write-Host "  powershell -ExecutionPolicy RemoteSigned -File .\scripts\setup.ps1 -RecreateVenv" -ForegroundColor Yellow
+    exit 1
+}
 
 Write-Host "== ROMKA ==" -ForegroundColor Cyan
 Write-Host "http://127.0.0.1:$Port/auth  (demo: demo@romka.local / RomkaDemo2026!)" -ForegroundColor DarkGray
