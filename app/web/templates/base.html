@@ -6,7 +6,7 @@
   <meta name="csrf-token" content="{{ csrf }}">
   <meta name="color-scheme" content="dark light">
   <title>{{ title }} — ROMKA</title>
-  <link rel="stylesheet" href="/static/css/romka.css?v=0.2.20">
+  <link rel="stylesheet" href="/static/css/romka.css?v=0.2.21">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%238b7cf6'/><text x='32' y='43' font-size='36' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>R</text></svg>">
 </head>
 <body data-page="{{ page }}" data-csrf="{{ csrf }}" data-auth="{{ auth_mode }}">
@@ -34,7 +34,7 @@
     <div class="card flat" style="padding:12px">
       <div class="chip-mini"><span>موتور هوش مصنوعی</span><span id="sb-provider" class="faint">…</span></div>
       <div class="chip-mini" style="margin-top:6px"><span>برنامه</span><span id="sb-plan" class="faint">…</span></div>
-      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.20</span></div>
+      <div class="chip-mini" style="margin-top:6px"><span>نسخه</span><span class="mono faint">v0.2.21</span></div>
     </div>
     <div class="sidebar-foot">
       <div class="small faint" style="margin-bottom:8px">{{ user.display_name or user.email }}</div>
@@ -64,6 +64,20 @@
       <button type="button" class="btn sm" id="day-draft-parse">استخراج پیشنهاد از متن روز</button>
       <button type="button" class="btn sm ghost" id="voice-stop" disabled>توقف ضبط</button>
       <button type="button" class="btn sm ghost" id="voice-new">گفت‌وگوی جدید</button></div>
+    <div class="wake-box" id="wake-box">
+      <label class="wake-switch" for="wake-enabled"><input type="checkbox" id="wake-enabled">
+        فعال‌سازی با گفتن «رومکا» (اختیاری، پیش‌فرض خاموش)</label>
+      <div id="wake-words-field" hidden>
+        <label for="wake-words">عبارت‌های فعال‌سازی (با کاما جدا کنید)</label>
+        <input id="wake-words" type="text" autocomplete="off" maxlength="120" value="رومکا, romka, hey romka, سلام رومکا">
+      </div>
+      <p class="xs faint" id="wake-note">این قابلیت با سرویس گفتار خود مرورگر کار می‌کند، نه یک موتور روی دستگاه. صدای شما برای تشخیص به آن سرویس فرستاده می‌شود، تب باید باز و روی نمایشگر بماند، و در کروم یا اج پشتیبانی می‌شود. مثل دستیار سیستمی همیشه‌آماده نیست؛ هر نشست حداکثر ۱۰ دقیقه است و با پنهان‌شدن تب خودکار متوقف می‌شود.</p>
+      <div class="row" id="wake-controls" hidden>
+        <button class="btn sm" type="button" id="wake-start">شروع گوش دادن</button>
+        <button class="btn sm ghost" type="button" id="wake-stop" disabled>توقف گوش دادن</button>
+        <span class="small muted" id="wake-status" role="status" aria-live="polite">خاموش</span>
+      </div>
+    </div>
     <div id="voice-status" class="small muted" role="status" aria-live="polite">برای صحبت، ضبط را شروع کنید یا متن بنویسید.</div>
     <label for="voice-text">متن قابل ویرایش</label>
     <textarea id="voice-text" maxlength="8000" rows="3" placeholder="پیام یا دستور خود را بگویید یا بنویسید"></textarea>
@@ -110,10 +124,10 @@
   </section>
   <button type="button" class="btn primary voice-launch" id="voice-open" aria-controls="voice-panel" aria-expanded="false">دستیار صوتی</button>
 </div>
-<script src="/static/js/persian-date.js?v=0.2.20"></script>
-<script src="/static/js/romka.js?v=0.2.20"></script>
-<script src="/static/js/voice.js?v=0.2.20"></script>
-<script src="/static/js/day-draft.js?v=0.2.20"></script>
+<script src="/static/js/persian-date.js?v=0.2.21"></script>
+<script src="/static/js/romka.js?v=0.2.21"></script>
+<script src="/static/js/voice.js?v=0.2.21"></script>
+<script src="/static/js/day-draft.js?v=0.2.21"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

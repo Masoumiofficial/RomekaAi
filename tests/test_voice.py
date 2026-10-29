@@ -15,7 +15,9 @@ def test_voice_widget_is_on_every_workspace_page(client):
     for path in ("/", "/chat", "/planner", "/agents", "/business", "/health", "/memory", "/settings", "/onboarding"):
         response = client.get(path)
         assert response.status_code == 200
-        for item in ("voice-widget", "voice-mic", "voice-text", "voice-confirm", "voice-plan-confirm", "voice-today", "voice-preview", '/static/js/voice.js?v=0.2.20'):
+        for item in ("voice-widget", "voice-mic", "voice-text", "voice-confirm", "voice-plan-confirm", "voice-today", "voice-preview",
+                     "wake-enabled", "wake-words", "wake-start", "wake-stop", "wake-status",
+                     '/static/js/voice.js?v=0.2.21'):
             assert item in response.text
         assert 'id="voice-panel" class="voice-panel card" aria-label="دستیار صوتی رومکا" hidden' in response.text
     assert client.get('/static/js/voice.js').status_code == 200
@@ -26,6 +28,27 @@ def test_voice_browser_simulation():
     if not node:
         pytest.skip("Node.js is needed to simulate the browser APIs")
     subprocess.run([node, "tests/voice_widget_test.js"], cwd=ROOT, check=True, timeout=30)
+
+
+def test_wake_word_is_off_by_default_and_never_starts_itself(client):
+    """The wake word is the one feature that could listen without a click, so the
+    shipped markup must leave it switched off and must say what it really does."""
+    page = client.get("/chat").text
+    assert 'id="wake-enabled"' in page
+    # the checkbox is rendered unchecked
+    assert '<input type="checkbox" id="wake-enabled">' in page
+    assert "پیش‌فرض خاموش" in page
+    assert "سرویس گفتار خود مرورگر" in page and "صدای شما" in page
+    assert "۱۰ دقیقه" in page and "تب باید باز" in page
+    # the controls stay hidden until the user opts in
+    assert 'id="wake-controls" hidden' in page
+
+
+def test_wake_word_browser_simulation():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js is needed to simulate the browser APIs")
+    subprocess.run([node, "tests/wake_word_widget_test.js"], cwd=ROOT, check=True, timeout=30)
 
 
 def test_voice_chat_disables_implicit_memory_writes(auth_client, db):

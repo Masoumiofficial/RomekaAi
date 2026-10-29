@@ -25,7 +25,9 @@ class Recognition {
 const win={SpeechRecognition:Recognition, SpeechSynthesisUtterance:class {constructor(text){this.text=text;}},
  speechSynthesis:{cancel(){}, getVoices(){return [{lang:'fa-IR'}]}, speak(u){spoken.push(u.text)}},
  location:{assign(p){navigated=p}}, addEventListener(){}, dispatchEvent(){}};
-const document={getElementById:id=>els[id],querySelector:()=>({content:'csrf-test'}),body:{dataset:{}}};
+const docListeners={};
+const document={getElementById:id=>els[id],querySelector:()=>({content:'csrf-test'}),body:{dataset:{}},
+  addEventListener:(name,cb)=>{(docListeners[name]||=[]).push(cb);},fire:(name,ev)=>{for(const cb of docListeners[name]||[])cb(ev);},hidden:false};
 const fetch=async(url,opts)=>{calls.push([url,opts]); if(failWrite && opts.method==='POST' && url.includes('/planner/tasks')) throw new Error('network');
  let data={ok:true}; if(url.endsWith('/chat/send')) data={ok:true,conversation_id:42,answer:'پاسخ مدل'};
  if(url.endsWith('/planner/tasks') && !opts.method) data={ok:true,items:[{title:'کار اول',status:'open'}]};

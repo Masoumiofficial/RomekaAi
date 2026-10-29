@@ -256,18 +256,50 @@
   if (page === "chat") {
     loadChrome();
     let convId = null, streaming = false;
-    const renderMsg = (m) => `<div class="msg ${m.role}"><div class="bubble">${esc(m.content)}</div>
-      <div class="msg-meta"><span>${m.role === "user" ? "شما" : "رومکا"}</span>
-      ${(m.active_agent_ids||[]).length?`<span class="tag accent">${esc(m.active_agent_ids.join(" + "))}</span>`:""}
-      ${m.confidence?`<span>اطمینان ${Math.round(m.confidence*100)}٪</span>`:""}</div>
-      ${m.role === "assistant" && Number.isInteger(m.id) ? `<div class="feedback-controls" data-feedback-message="${m.id}">
+    const timeOf = iso => { try { return new Date(iso).toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'}); } catch (_) { return ''; } };
+    const dayKey = iso => String(iso || '').slice(0, 10);
+    const dayLabel = iso => {
+      const key = dayKey(iso);
+      if (!key) return '';
+      const today = window.RomkaDate?.todayTehran();
+      if (key === today) return 'امروز';
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      if (key === yesterday) return 'دیروز';
+      return window.RomkaDate?.display(key) || key;
+    };
+    // One bubble per message, grouped like a messenger: consecutive messages of the
+    // same author share spacing, and only the last bubble of a group gets a tail.
+    const renderMsg = (m, pos) => `<div class="msg ${m.role} ${pos}">
+      ${m.role === 'assistant' ? '<span class="msg-avatar" aria-hidden="true">R</span>' : ''}
+      <div class="bubble"><div class="bubble-text">${esc(m.content)}</div>
+        <div class="bubble-foot"><span>${esc(timeOf(m.created_at))}</span>${m.role === 'user' ? '<span class="dot ok" title="ارسال شد"></span>' : ''}</div></div>
+      <div class="msg-meta">
+        ${m.role === 'user' ? '<span>شما</span>' : '<span>رومکا</span>'}
+        ${(m.active_agent_ids||[]).length?`<span class="tag accent">${esc(m.active_agent_ids.join(' + '))}</span>`:''}
+        ${m.confidence?`<span>اطمینان ${Math.round(m.confidence*100)}٪</span>`:''}
+      </div>
+      ${m.role === 'assistant' && Number.isInteger(m.id) ? `<div class="feedback-controls" data-feedback-message="${m.id}">
         <span class="xs faint">این پاسخ چطور بود؟</span>
-        <button type="button" class="btn sm ghost" data-feedback="helpful" aria-pressed="${m.feedback?.rating === "helpful"}">مفید</button>
-        <button type="button" class="btn sm ghost" data-feedback="not_helpful" aria-pressed="${m.feedback?.rating === "not_helpful"}">نیاز به بهبود</button>
-        ${m.feedback?.rating === "not_helpful" ? `<label class="xs">دلیل (اختیاری)
+        <button type="button" class="btn sm ghost" data-feedback="helpful" aria-pressed="${m.feedback?.rating === 'helpful'}">مفید</button>
+        <button type="button" class="btn sm ghost" data-feedback="not_helpful" aria-pressed="${m.feedback?.rating === 'not_helpful'}">نیاز به بهبود</button>
+        ${m.feedback?.rating === 'not_helpful' ? `<label class="xs">دلیل (اختیاری)
           <select data-feedback-reason aria-label="دلیل نیاز به بهبود"><option value="">انتخاب کنید</option>
-          ${[["incorrect","نادرست"],["irrelevant","نامرتبط"],["unclear","نامفهوم"],["unsafe","ناایمن"],["other","سایر"]].map(([v,l])=>`<option value="${v}" ${m.feedback.reason === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>` : ""}
-        ${m.feedback ? `<button type="button" class="btn sm ghost" data-feedback="delete">حذف بازخورد</button>` : ""}</div>` : ""}</div>`;
+          ${[['incorrect','نادرست'],['irrelevant','نامرتبط'],['unclear','نامفهوم'],['unsafe','ناایمن'],['other','سایر']].map(([v,l])=>`<option value="${v}" ${m.feedback.reason === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>` : ''}
+        ${m.feedback ? `<button type="button" class="btn sm ghost" data-feedback="delete">حذف بازخورد</button>` : ''}</div>` : ''}</div>`;
+    const renderConversation = items => {
+      if (!items.length) return `<div class="empty">پیامی نیست.</div>`;
+      let html = '', lastDay = '', lastRole = '';
+      items.forEach((m, i) => {
+        const day = dayKey(m.created_at);
+        if (day !== lastDay) { html += `<div class="chat-day">${esc(dayLabel(m.created_at))}</div>`; lastDay = day; lastRole = ''; }
+        const next = items[i + 1];
+        const sameNext = next && next.role === m.role && dayKey(next.created_at) === day;
+        const pos = lastRole === m.role ? (sameNext ? 'group-mid' : 'group-end') : (sameNext ? 'group-start' : 'group-start');
+        html += renderMsg(m, pos);
+        lastRole = m.role;
+      });
+      return html;
+    };
     const loadFeedbackSummary = async () => {
       try { const r = await api("/chat/feedback/summary");
         setHTML("feedback-summary", `${r.total} پاسخ ارزیابی‌شده · ${r.helpful} مفید · ${r.not_helpful} نیازمند بهبود`);
@@ -293,16 +325,27 @@
         toast("دلیل بازخورد ذخیره شد.");
       } catch(e) { toast(e.message, true); }
     });
-    const loadConvs = async () => {
+    // Opening the page should land in the newest conversation, like a messenger.
+    const loadConvs = async (autoSelect = false) => {
       try { const r = await api("/chat/conversations");
-        setHTML("conv-list", r.items.length ? r.items.map(c=>`<div class="conv-item ${c.id===convId?"active":""}" data-id="${c.id}">${esc(c.title)} <span class="faint xs">#${c.id}</span></div>`).join("") : `<div class="empty">گفت‌وگویی نیست.</div>`);
-        document.querySelectorAll(".conv-item").forEach(x=>x.addEventListener("click",()=>{convId=+x.dataset.id;loadMsgs();loadConvs();}));
+        if (autoSelect && !convId && r.items.length) convId = r.items[0].id;
+        setHTML("conv-list", r.items.length ? r.items.map(c=>`<div class="conv-item ${c.id===convId?"active":""}" data-id="${c.id}" role="button" tabindex="0">
+            <span class="conv-ava" aria-hidden="true">${esc((c.title||'ر').trim().charAt(0))}</span>
+            <span class="conv-body"><span class="conv-title">${esc(c.title || 'گفت‌وگو')}</span>
+            <span class="conv-sub">${esc(timeOf(c.created_at))} · شناسه ${c.id}</span></span></div>`).join("")
+          : `<div class="empty">گفت‌وگویی نیست.</div>`);
+        document.querySelectorAll(".conv-item").forEach(x=>{
+          const open=()=>{convId=+x.dataset.id;loadMsgs();loadConvs();};
+          x.addEventListener("click",open);
+          x.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open();}});
+        });
+        if (autoSelect && convId) loadMsgs();
       } catch(e){ toast(e.message,true); }
     };
     const loadMsgs = async () => {
       if (!convId) { setHTML("chat-log", `<div class="empty">پیامی ثبت نشده. شروع کنید.</div>`); return; }
       try { const r = await api(`/chat/conversations/${convId}/messages`);
-        setHTML("chat-log", r.items.length ? r.items.map(renderMsg).join("") : `<div class="empty">پیامی نیست.</div>`);
+        setHTML("chat-log", renderConversation(r.items));
         const log = $("chat-log"); log.scrollTop = log.scrollHeight;
       } catch(e){ toast(e.message,true); }
     };
@@ -326,15 +369,25 @@
         } catch(e){ toast(e.message,true); }
       }));
     };
+    const atBottom = () => { const l = $("chat-log"); return l.scrollHeight - l.scrollTop - l.clientHeight < 90; };
+    const jump = $("chat-jump");
+    $("chat-log").addEventListener("scroll", () => { jump.hidden = atBottom(); });
+    if (jump) jump.hidden = true;   // only a scrolled-up conversation shows it
+    jump?.addEventListener("click", () => { const l = $("chat-log"); l.scrollTop = l.scrollHeight; jump.hidden = true; });
+    const autoGrow = () => { const t = $("chat-text"); t.style.height = "auto"; t.style.height = Math.min(150, t.scrollHeight) + "px"; };
+    $("chat-text")?.addEventListener("input", autoGrow);
     const send = async () => {
       const text = $("chat-text").value.trim(); if (!text) return;
-      $("chat-text").value = "";
+      $("chat-text").value = ""; autoGrow();
       const log = $("chat-log");
       if (log.querySelector(".empty")) log.innerHTML = "";
-      log.insertAdjacentHTML("beforeend", renderMsg({role:"user",content:text}));
-      log.scrollTop = log.scrollHeight;
-      const holder = document.createElement("div"); holder.className = "msg assistant";
-      holder.innerHTML = `<div class="bubble">…</div>`; log.appendChild(holder);
+      const stick = atBottom();
+      log.insertAdjacentHTML("beforeend", renderMsg({role:"user",content:text,created_at:new Date().toISOString()},"group-start"));
+      if (stick) log.scrollTop = log.scrollHeight;
+      const holder = document.createElement("div"); holder.className = "msg assistant group-start";
+      holder.innerHTML = `<div class="bubble chat-typing" aria-label="در حال نوشتن"><i></i><i></i><i></i></div>`;
+      log.appendChild(holder);
+      if (stick) log.scrollTop = log.scrollHeight;
       try {
         if (!streaming) {
           const r = await api("/chat/send",{body:{text, conversation_id:convId, include_history:$("chat-history-optin").checked}});
@@ -350,7 +403,8 @@
             const parts = buf.split("\n\n"); buf = parts.pop();
             for(const p of parts){ const line=p.split("\n").find(l=>l.startsWith("data: ")); if(!line)continue;
               const ev=JSON.parse(line.slice(6));
-              if(ev.event==="delta"){ full+=ev.text; holder.querySelector(".bubble").textContent=full; log.scrollTop=log.scrollHeight; }
+              if(ev.event==="delta"){ full+=ev.text; const b=holder.querySelector(".bubble-text")||holder.querySelector(".bubble");
+                if(b) b.textContent=full; if(atBottom()) log.scrollTop=log.scrollHeight; }
               if(ev.event==="done") meta=ev.meta; if(ev.event==="error") full+=ev.message; }
           }
           holder.outerHTML = renderMsg({role:"assistant",content:full,active_agent_ids:meta?.active_agents||[],confidence:meta?.critic?.score});
@@ -360,9 +414,9 @@
     };
     $("chat-send")?.addEventListener("click",send);
     $("chat-text")?.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
-    $("new-conv")?.addEventListener("click",()=>{convId=null;setHTML("chat-log",`<div class="empty">گفت‌وگوی جدید.</div>`);loadConvs();});
+    $("new-conv")?.addEventListener("click",()=>{convId=null;setHTML("chat-log",`<div class="empty">گفت‌وگوی جدید؛ پیام بنویسید.</div>`);loadConvs();});
     $("stream-toggle")?.addEventListener("click",()=>{streaming=!streaming;$("stream-toggle").textContent=`⇢ جریانی: ${streaming?"روشن":"خاموش"}`;});
-    loadConvs(); loadFeedbackSummary();
+    loadConvs(true); loadFeedbackSummary();
   }
 
   /* ── planner ── */

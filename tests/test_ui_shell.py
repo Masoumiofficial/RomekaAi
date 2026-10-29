@@ -54,7 +54,7 @@ def test_every_page_is_reachable_and_has_the_accessible_shell(client):
         # cache-busting: every local script carries the app version
         for src in re.findall(r'<script src="(/static/js/[^"]+)"', text):
             assert "?v=" in src, f"{page}: {src} is not versioned"
-    assert "romka.css?v=0.2.20" in client.get("/").text
+    assert "romka.css?v=0.2.21" in client.get("/").text
     assert client.get("/static/css/romka.css").status_code == 200
     assert client.get("/static/fonts/vazirmatn-arabic-400-normal.woff2").status_code == 200
 
@@ -96,3 +96,30 @@ def test_pages_do_not_ship_broken_inline_styles(client, page):
     text = client.get("/" if page == "dashboard" else f"/{page}").text
     for width in re.findall(r'(?<!max-)width:\s*(\d{3,})px', text):
         assert int(width) <= 400, f"{page}: fixed width {width}px is not responsive"
+
+
+def test_chat_page_is_a_messenger_style_conversation(client):
+    """The chat shell keeps every hook the JS binds to, and stays RTL/accessible."""
+    text = client.get("/chat").text
+    for hook in ("chat-log", "chat-text", "chat-send", "chat-jump", "chat-history-optin",
+                 "conv-list", "chat-agents", "chat-meta", "chat-actions", "feedback-summary",
+                 "stream-toggle", "new-conv", "بازخوردهای من"):
+        assert hook in text, f"{hook} missing from the chat page"
+    assert 'role="log"' in text and 'aria-live="polite"' in text
+    assert 'aria-label="ارسال پیام"' in text          # the send button is not icon-only
+    assert 'dir="rtl"' in text
+    # the old fixed-height composer is gone: the composer grows instead
+    assert 'class="chat-input"' not in text
+
+
+def test_chat_styles_are_grouping_aware(client):
+    """Bubbles, day dividers and tails are what make it read like a conversation."""
+    css = (ROOT / "app" / "web" / "static" / "css" / "romka.css").read_text(encoding="utf-8")
+    for selector in (".chat-day", ".msg.group-start", ".msg.group-end", ".chat-typing",
+                     ".chat-jump", ".chat-send", ".conv-ava"):
+        assert selector in css, f"{selector} missing from the stylesheet"
+    # the user's own bubbles sit on the left in RTL, the assistant's on the right
+    assert ".msg.user { align-self:flex-end; }" in css
+    assert ".msg.assistant { align-self:flex-start; }" in css
+    assert "chat-blink" in css            # typing indicator animation
+    assert "prefers-reduced-motion" in css

@@ -27,7 +27,7 @@
   window.RomkaVoiceListening = () => recognition !== null;
   const setBusy = value => {
     busy = value; $('voice-send').disabled = value; $('voice-action-apply').disabled = value;
-    $('voice-mic').disabled = value || !!recognition; $('voice-new').disabled = value; $('voice-action-cancel').disabled = value;
+    $('voice-mic').disabled = value || !!recognition || !!wakeRecognition; $('voice-new').disabled = value; $('voice-action-cancel').disabled = value;
     $('voice-plan-apply').disabled = value; $('voice-plan-cancel').disabled = value;
     $('voice-today').disabled = value; $('voice-preview').disabled = value;
   };
@@ -59,11 +59,13 @@
     $('voice-panel').hidden = false; $('voice-open').setAttribute('aria-expanded','true'); $('voice-text').focus();
   });
   $('voice-close').addEventListener('click', () => {
-    stopCapture(true); stopSpeaking(); $('voice-panel').hidden = true; $('voice-open').setAttribute('aria-expanded','false'); $('voice-open').focus();
+    stopCapture(true); stopSpeaking();
+    if (wakeOn) status('فعال‌سازی صوتی روشن باقی می‌ماند؛ برای خاموش کردن آن را در همین پنل غیرفعال کنید.');
+    $('voice-panel').hidden = true; $('voice-open').setAttribute('aria-expanded','false'); $('voice-open').focus();
   });
   window.addEventListener('pagehide', () => { stopCapture(true); stopSpeaking(); });
   $('logout-btn')?.addEventListener('click', () => { stopCapture(true); stopSpeaking(); setConversation(null); });
-  $('voice-mic').addEventListener('click', () => {
+  function startCapture() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { status('تشخیص گفتار در این مرورگر در دسترس نیست؛ می‌توانید متن بنویسید.'); return; }
     if (recognition) return;
@@ -85,11 +87,167 @@
       }
     };
     rec.onerror = e => { if (recognition === rec) { recognitionError = true; status(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'اجازهٔ میکروفون یا سرویس گفتار داده نشد.' : 'تشخیص گفتار ناموفق بود؛ دوباره تلاش کنید یا متن بنویسید.'); } };
-    rec.onend = () => { if (recognition === rec) { recognition = null; captureAllowed = false; $('voice-mic').disabled = busy; $('voice-stop').disabled = true; if (!recognitionError) status('ضبط پایان یافت؛ متن را بررسی کنید.'); } };
+    rec.onend = () => { if (recognition === rec) { recognition = null; captureAllowed = false; $('voice-mic').disabled = busy; $('voice-stop').disabled = true; if (!recognitionError) status('ضبط پایان یافت؛ متن را بررسی کنید.'); if (wakeArmed) setTimeout(wakeRearm, 250); } };
     try { rec.start(); $('voice-mic').disabled = true; $('voice-stop').disabled = false; status('در انتظار شروع ضبط و اجازهٔ مرورگر…'); }
     catch (_) { recognition = null; captureAllowed = false; $('voice-mic').disabled = false; $('voice-stop').disabled = true; status('میکروفون شروع نشد؛ مجوز مرورگر را بررسی کنید.'); }
-  });
+  }
+  $('voice-mic').addEventListener('click', startCapture);
   $('voice-stop').addEventListener('click', () => { stopCapture(false); status('در حال پایان ضبط…'); });
+
+  /* ── optional wake word ("رومکا") ───────────────────────────────────────────
+     Off by default. The browser's own SpeechRecognition does the listening, so
+     audio leaves the device to that service and the tab must stay visible; this
+     is NOT an on-device, low-power detector like Siri. It is bounded: one
+     session, a hard time limit, and it stops the moment the tab is hidden. */
+  const WAKE_KEY = 'romka.voice.wake.v1', WAKE_MAX_MS = 10 * 60 * 1000, WAKE_WORDS_KEY = 'romka.voice.wakewords.v1';
+  const DEFAULT_WAKE_WORDS = 'رومکا, romka, hey romka, سلام رومکا';
+  let wakeRecognition = null, wakeOn = false, wakeArmed = false, wakeDeadline = 0, wakeTimer = null, wakeFailures = 0, wakeStopping = false;
+  const wakeWords = () => ($('wake-words')?.value || DEFAULT_WAKE_WORDS).split(/[,،]/)
+    .map(w => normalize(w)).filter(Boolean);
+  const wakeStatus = message => { const el = $('wake-status'); if (el) el.textContent = message; };
+  const wakeMatches = text => {
+    const clean = normalize(text);
+    if (!clean) return false;
+    return wakeWords().some(word => word.length >= 2 && clean.includes(word));
+  };
+  const chime = () => {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+      const ctx = new Ctx(); const now = ctx.currentTime;
+      [[660, 0], [880, .12]].forEach(([hz, at]) => {
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.frequency.value = hz; osc.type = 'sine';
+        gain.gain.setValueAtTime(.0001, now + at);
+        gain.gain.exponentialRampToValueAtTime(.09, now + at + .02);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + at + .18);
+        osc.connect(gain); gain.connect(ctx.destination); osc.start(now + at); osc.stop(now + at + .2);
+      });
+      setTimeout(() => { try { ctx.close(); } catch (_) {} }, 600);
+    } catch (_) {}
+  };
+  const wakeLabel = on => { const b = $('voice-open'); if (b) b.textContent = on ? 'دستیار صوتی · گوش می‌دهم' : 'دستیار صوتی';
+    const box = $('wake-box'); if (box) box.dataset.on = String(on); };
+  function wakeStop(message) {
+    wakeStopping = true; wakeOn = false;
+    if (wakeTimer) { clearInterval(wakeTimer); wakeTimer = null; }
+    if (wakeRecognition) { const rec = wakeRecognition; wakeRecognition = null; try { rec.abort(); } catch (_) {} }
+    wakeDeadline = 0; wakeArmed = false;
+    const box = $('wake-start'), stop = $('wake-stop'), toggle = $('wake-enabled');
+    if (box) box.disabled = false; if (stop) stop.disabled = true;
+    if (!busy && !recognition) $('voice-mic').disabled = false;
+    if (toggle) toggle.checked = false;
+    try { localStorage.removeItem(WAKE_KEY); } catch (_) {}
+    if ($('wake-words-field')) $('wake-words-field').hidden = true;
+    if ($('wake-controls')) $('wake-controls').hidden = true;
+    wakeLabel(false);
+    if (message) wakeStatus(message);
+    const wakeBoxEl = $('wake-box'); if (wakeBoxEl) wakeBoxEl.dataset.on = 'false';
+    wakeStopping = false;
+  }
+  function wakeStart() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { wakeStatus('تشخیص گفتار در این مرورگر در دسترس نیست؛ فعال‌سازی صوتی کار نمی‌کند.'); return false; }
+    if (wakeRecognition) return true;
+    if (recognition) { stopCapture(false); }
+    stopSpeaking();
+    let rec;
+    try { rec = new SpeechRecognition(); } catch (_) { wakeStatus('تشخیص گفتار در دسترس نیست.'); return false; }
+    wakeRecognition = rec; wakeOn = true; wakeFailures = 0;
+    wakeDeadline = Date.now() + WAKE_MAX_MS;
+    let buffer = '';
+    rec.lang = 'fa-IR'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
+    rec.onstart = () => { if (wakeRecognition === rec) wakeStatus('در انتظار گفتن «رومکا»…'); };
+    rec.onresult = e => {
+      if (wakeRecognition !== rec) return;
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        buffer = (buffer + ' ' + (e.results[i][0].transcript || '')).slice(-240);
+      }
+      if (!wakeMatches(buffer)) return;
+      buffer = '';
+      wakeStatus('رومکا فعال شد؛ دستور را بگویید.');
+      status('رومکا فعال شد؛ دستور را بگویید.');
+      chime();
+      wakeRecognition = null; wakeOn = false;
+      if (wakeTimer) { clearInterval(wakeTimer); wakeTimer = null; }
+      try { rec.stop(); } catch (_) {}
+      if ($('wake-stop')) $('wake-stop').disabled = true;
+      $('voice-panel').hidden = false; $('voice-open').setAttribute('aria-expanded', 'true');
+      wakeLabel(false);
+      setTimeout(() => { try { startCapture(); } catch (_) {} }, 120);
+    };
+    rec.onerror = e => {
+      if (wakeRecognition !== rec) return;
+      const kind = e.error;
+      if (kind === 'not-allowed' || kind === 'service-not-allowed') {
+        wakeStop('اجازهٔ میکروفون یا سرویس گفتار داده نشد؛ فعال‌سازی صوتی خاموش شد.');
+      } else if (kind === 'network' || kind === 'audio-capture') {
+        wakeFailures += 1;
+        if (wakeFailures >= 3) wakeStop('سرویس گفتار پاسخ نداد؛ فعال‌سازی صوتی خاموش شد. دکمهٔ ضبط دستی همچنان کار می‌کند.');
+      }
+    };
+    rec.onend = () => {
+      if (wakeRecognition !== rec || wakeStopping) return;
+      wakeRecognition = null;
+      if (wakeOn) setTimeout(() => { if (wakeOn && !wakeRecognition) wakeStart(); }, 350);
+    };
+    try { rec.start(); } catch (_) { wakeRecognition = null; wakeOn = false; wakeStatus('میکروفون شروع نشد؛ مجوز مرورگر را بررسی کنید.'); return false; }
+    $('voice-mic').disabled = true;   // one microphone, one listener
+    return true;
+  }
+  function wakeRearm() {
+    if (!wakeArmed || wakeRecognition || recognition) return;
+    if (Date.now() > wakeDeadline) { wakeStop('به محدودیت ۱۰ دقیقهٔ گوش دادن رسید؛ برای ادامه دوباره روشن کنید.'); return; }
+    wakeStart();
+  }
+  const wakeControls = () => {
+    const toggle = $('wake-enabled'); if (!toggle) return;
+    const box = $('wake-start'), stop = $('wake-stop');
+    try {
+      const words = $('wake-words')?.value?.trim();
+      if (words) localStorage.setItem(WAKE_WORDS_KEY, words); else localStorage.setItem(WAKE_WORDS_KEY, DEFAULT_WAKE_WORDS);
+    } catch (_) {}
+    if (toggle.checked) {
+      if ($('wake-words-field')) $('wake-words-field').hidden = false;
+      if ($('wake-controls')) $('wake-controls').hidden = false;
+      const ok = wakeStart();
+      if (!ok) { toggle.checked = false; wakeArmed = false; return; }
+      wakeArmed = true; wakeDeadline = Date.now() + WAKE_MAX_MS;
+      try { localStorage.setItem(WAKE_KEY, 'on'); } catch (_) {}
+      if (box) box.disabled = true; if (stop) stop.disabled = false;
+      wakeLabel(true);
+      wakeStatus('فعال‌سازی صوتی روشن است؛ «رومکا» بگویید.');
+      if (wakeTimer) clearInterval(wakeTimer);
+      wakeTimer = setInterval(() => {
+        if (!wakeOn) return;
+        if (Date.now() > wakeDeadline) { wakeStop('به محدودیت ۱۰ دقیقهٔ گوش دادن رسید؛ برای ادامه دوباره روشن کنید.'); return; }
+        const left = Math.ceil((wakeDeadline - Date.now()) / 1000);
+        wakeStatus(`در انتظار گفتن «رومکا»… (${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} تا توقف خودکار)`);
+      }, 1000);
+    } else {
+      wakeArmed = false;
+      wakeStop('فعال‌سازی صوتی خاموش شد.');
+    }
+  };
+  $('wake-enabled')?.addEventListener('change', wakeControls);
+  $('wake-start')?.addEventListener('click', () => { if (!$('wake-enabled')?.checked) { $('wake-enabled').checked = true; } wakeControls(); });
+  $('wake-stop')?.addEventListener('click', () => wakeStop('گوش دادن متوقف شد.'));
+  // Restore the opt-in and the wake words from this browser only.
+  (() => {
+    try {
+      const words = localStorage.getItem(WAKE_WORDS_KEY);
+      if (words && $('wake-words')) $('wake-words').value = words;
+      if (localStorage.getItem(WAKE_KEY) === 'on' && $('wake-enabled')) {
+        $('wake-enabled').checked = true; wakeControls();
+      }
+    } catch (_) {}
+  })();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && wakeOn) wakeStop('تب پنهان شد؛ گوش دادن در پس‌زمینه متوقف شد.');
+  });
+  window.addEventListener('pagehide', () => { if (wakeOn) wakeStop(); });
+  $('logout-btn')?.addEventListener('click', () => { if (wakeOn) wakeStop(); });
+  window.RomkaVoiceWake = () => ({enabled: wakeArmed, listening: wakeRecognition !== null,
+    remainingMs: wakeArmed ? Math.max(0, wakeDeadline - Date.now()) : 0});
   $('voice-read').addEventListener('click', readReply);
   $('voice-silence').addEventListener('click', () => { stopSpeaking(); status('پخش صدا متوقف شد.'); });
   $('voice-new').addEventListener('click', () => { stopSpeaking(); setConversation(null); pending = null; pendingPlan = null; $('voice-confirm').hidden = true; $('voice-plan-confirm').hidden = true; reply(''); status('گفت‌وگوی جدید آماده است.'); });
